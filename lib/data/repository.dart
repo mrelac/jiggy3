@@ -1,6 +1,5 @@
 import 'package:jiggy3/models/album.dart';
-import 'package:jiggy3/models/puzzle_card.dart';
-import 'package:jiggy3/models/puzzle_model.dart';
+import 'package:jiggy3/models/puzzle.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'database.dart';
@@ -74,17 +73,16 @@ class Repository {
     puzzleDeleteIsTicked.clear();
   }
 
-  /// Returns all PuzzleCards for album, if not null; else, all cards
-  Future<List<PuzzleCard>> getPuzzleCards({int albumId}) async {
+  /// Returns all Puzzles for album, if not null; else, all cards
+  Future<List<Puzzle>> getPuzzles({int albumId}) async {
     final List<Puzzle> puzzles = (albumId == null
         ? await _getPuzzles()
         : await _getPuzzlesByAlbumId(albumId));
 
-    final cards = <PuzzleCard>[];
+    final cards = <Puzzle>[];
     for (Puzzle puzzle in puzzles) {
       bool shouldDelete = puzzleDeleteIsTicked[puzzle.id] ?? false;
-      cards.add(PuzzleCard(puzzle.id, puzzle.thumb, puzzle.name,
-          shouldDelete: shouldDelete));
+      cards.add(Puzzle(id: puzzle.id, label: puzzle.label, thumb: puzzle.thumb));
     }
     return cards;
   }

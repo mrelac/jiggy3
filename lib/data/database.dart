@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:jiggy3/models/puzzle_model.dart';
+import 'package:jiggy3/models/puzzle.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -31,11 +31,6 @@ class DBProvider {
 
     return _database;
   }
-
-
-
-
-
 
 
   // db access methods here
@@ -77,17 +72,17 @@ class DBProvider {
       String insert =
       '''
 INSERT INTO puzzle
-  (name, thumb, imageLocation, image_width, image_height,
+  (label, thumb, imageLocation, image_width, image_height,
    image_colour_r, image_colour_g, image_colour_b,
    image_opacity, max_pieces)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 ''';
-      parms = [puzzle.name, base64Encode(puzzle.thumb), puzzle.imageLocation,
+      parms = [puzzle.label, base64Encode(puzzle.thumb), puzzle.imageLocation,
         puzzle.imageWidth, puzzle.imageHeight,
         puzzle.imageColour.red, puzzle.imageColour.green, puzzle.imageColour.blue,
         puzzle.imageOpacity, puzzle.maxPieces];
       puzzle.id = await db.rawInsert(insert, parms);
-      print('INSERTed puzzle ${puzzle.name} (id: ${puzzle.id})');
+      print('INSERTed puzzle ${puzzle.label} (id: ${puzzle.id})');
     return puzzle;
   }
 
@@ -96,7 +91,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 SELECT p.* FROM puzzle p
  JOIN album_puzzle ap ON ap.puzzle_id = p.id
  JOIN album a ON a.id = ap.album_id
- WHERE a.name = ?;
+ WHERE a.label = ?;
     ''';
 
     final db = await database;
@@ -130,7 +125,7 @@ SELECT p.* FROM puzzle p
     await db.execute('''
 CREATE TABLE album(
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  name             TEXT NOT NULL UNIQUE,
+  label            TEXT NOT NULL UNIQUE,
   is_selectable    INTEGER DEFAULT 1
 );
   ''');
@@ -139,7 +134,7 @@ CREATE TABLE album(
     await db.execute('''
 CREATE TABLE puzzle(
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  name             TEXT    NOT NULL UNIQUE,
+  label            TEXT    NOT NULL UNIQUE,
   thumb            BLOB,
   image_location   TEXT    NOT NULL, 
   image_width      REAL,

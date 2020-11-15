@@ -12,10 +12,9 @@ import 'package:flutter/material.dart';
 //       EXECUTIVE DECISION: All puzzle image heights will be transformed to (portrait: 1024; landscape: 768)
 //       EXECUTIVE DECISION: All puzzle image widths will be transformed to height * aspectRatio
 
-// FIXME Rename this to Puzzle after old 'Puzzle' usages have been removed
 class Puzzle {
   int id;
-  String name;
+  String label;
   Uint8List thumb;
   String imageLocation;
   double imageWidth;
@@ -30,7 +29,7 @@ class Puzzle {
 
   Puzzle({
     this.id,
-    @required this.name,
+    @required this.label,
     @required this.thumb,
     @required this.imageLocation,
     @required this.imageWidth,
@@ -48,7 +47,7 @@ class Puzzle {
 
   Puzzle.fromMap(Map json) :
         assert(json['id'] != null),
-        assert(json['name'] != null),
+        assert(json['label'] != null),
         assert(json['thumb_blob'] != null),
         assert(json['location'] != null),
         assert(json['image_width'] != null),
@@ -59,7 +58,7 @@ class Puzzle {
         assert(json['image_opacity'] != null),
 
         id = json['id'],
-        name = json['name'],
+        label = json['label'],
         thumb = base64Decode(json['thumb_blob']),
         imageLocation = json['location'],
         imageWidth = json['image_width'],
@@ -81,14 +80,14 @@ class Puzzle {
       identical(this, other) ||
           other is Puzzle &&
               runtimeType == other.runtimeType &&
-              name.toLowerCase() == other.name.toLowerCase();
+              label.toLowerCase() == other.label.toLowerCase();
 
   @override
-  int get hashCode => name.hashCode;
+  int get hashCode => label.hashCode;
 
   @override
   String toString() {
-    return 'Puzzle{id: $id, name: $name, imageLocation: $imageLocation, '
+    return 'Puzzle{id: $id, label: $label, imageLocation: $imageLocation, '
         'imageWidth: $imageWidth, imageHeight: $imageHeight, '
         'maxPieces: $maxPieces}';
   }

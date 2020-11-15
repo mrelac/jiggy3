@@ -1,12 +1,10 @@
-
-
-import 'package:jiggy3/models/puzzle_card.dart';
+import 'package:jiggy3/models/puzzle.dart';
 
 /// Keeps track of an album
 class Album {
   final int id;
   final String label;
-  final List<PuzzleCard> puzzleCards;
+  final List<Puzzle> puzzleCards;
   final bool isSelectable;      // true if album can be modified/deleted; false otherwise
   final bool isEditing;         // true if editing controls are showing
   final bool shouldDelete;      // true if checkbox is ticked; false if it is not
