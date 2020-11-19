@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:jiggy3/data/repository.dart';
 
 import 'blocs/bloc_provider.dart';
-import 'blocs/puzzle_cards_bloc.dart';
+import 'blocs/puzzles_bloc.dart';
 
 void main() {
   runApp(Jiggy3());
@@ -12,6 +13,10 @@ class Jiggy3 extends StatelessWidget {
   Widget build(BuildContext context) {
 //    globals.createDatabase = createDatabaseFlag?.toLowerCase() == "true";
     final title = 'Jiggy!';
+
+
+//    Repository.deleteJiggyDatabase();
+
 
     return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -31,7 +36,7 @@ class Jiggy3 extends StatelessWidget {
           ),
         // Inject the PuzzleCardsBloc to get the latest data later
         home: BlocProvider(
-          bloc: PuzzleCardsBloc(),
+          bloc: PuzzlesBloc(),
           child: MyHomePage(title: 'Jiggy!'),
 //          child: ChooserPage(),
           )
@@ -59,26 +64,35 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  PuzzleCardsBloc _puzzleCardsBloc;
+  PuzzlesBloc _puzzlesBloc;
 
   @override
   void initState() {
     super.initState();
-    _puzzleCardsBloc = BlocProvider.of<PuzzleCardsBloc>(context);
+    _puzzlesBloc = BlocProvider.of<PuzzlesBloc>(context);
   }
 
   void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+//    setState(() {
+//      // This call to setState tells the Flutter framework that something has
+//      // changed in this State, which causes it to rerun the build method below
+//      // so that the display can reflect the updated values. If we changed
+//      // _counter without calling setState(), then the build method would not be
+//      // called again, and so nothing would appear to happen.
+//      _counter++;
+//    });
+
+    _puzzlesBloc.puzzles.listen((event) {
+      _puzzlesBloc.increment;
     });
   }
+
   void _decrementCounter() {
-  setState(() { _counter--; });
+//    setState(() { _counter--; });
+
+    _puzzlesBloc.puzzles.listen((event) {
+      _puzzlesBloc.decrement;
+    });
   }
 
   @override
@@ -174,7 +188,7 @@ class _MyHomePageState extends State<MyHomePage> {
         // Once again, use the BlocProvider to pass the ViewNoteBloc
         // to the ViewNotePage
         builder: (context) => BlocProvider(
-          bloc: PuzzleCardsBloc(),
+          bloc: PuzzlesBloc(),
           child: MySecondPage(
             title: 'My Second Page',
             counter: counter,

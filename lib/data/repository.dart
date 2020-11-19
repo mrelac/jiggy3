@@ -5,29 +5,20 @@ import 'package:sqflite/sqflite.dart';
 import 'database.dart';
 
 class Repository {
-  static final Repository _repo = new Repository._private();
-
-//  var puzzles = <Puzzle>[];
-  var puzzleDeleteIsTicked = <int, bool>{};
-
-  static Database _db;
-
-  static Repository get repo {
-    if (_db == null) {}
-    return _repo;
-  }
 
   Repository._private();
 
-  Future<void> _initialise() async {
-    _db = await DBProvider.db.database;
-  }
-
-  Future<Puzzle> createPuzzle(Puzzle puzzle) async {
+  static Future<Puzzle> createPuzzle(Puzzle puzzle) async {
     return await DBProvider.db.createPuzzle(puzzle);
   }
 
-  Future<List<Puzzle>> getPuzzlesByAlbum(Album album) async {
+  static Future<void> deleteJiggyDatabase() async {
+    return await DBProvider.db.deleteJiggyDatabase();
+  }
+
+
+
+  static Future<List<Puzzle>> getPuzzlesByAlbum(Album album) async {
     List<Map<String, dynamic>> jsonRows =
         await DBProvider.db.getPuzzlesByAlbum(album.id);
     var puzzles = <Puzzle>[];
@@ -37,7 +28,7 @@ class Repository {
     return puzzles;
   }
 
-  Future<List<Album>> getAlbums() async {
+  static Future<List<Album>> getAlbums() async {
     List<Map<String, dynamic>> jsonRows = await DBProvider.db.getAlbums();
     var albums = <Album>[];
     for (var jsonRow in jsonRows) {
@@ -46,19 +37,19 @@ class Repository {
     return albums;
   }
 
-  Future<List<Puzzle>> _getPuzzles() async {
+  static Future<List<Puzzle>> _getPuzzles() async {
     final List<Map<String, dynamic>> jsonRows =
         await DBProvider.db.getPuzzles();
     return _jsonToPuzzles(jsonRows);
   }
 
-  Future<List<Puzzle>> _getPuzzlesByAlbumId(int albumId) async {
+  static Future<List<Puzzle>> _getPuzzlesByAlbumId(int albumId) async {
     final List<Map<String, dynamic>> jsonRows =
         await DBProvider.db.getPuzzlesByAlbum(albumId);
     return _jsonToPuzzles(jsonRows);
   }
 
-  List<Puzzle> _jsonToPuzzles(List<Map<String, dynamic>> jsonRows) {
+  static List<Puzzle> _jsonToPuzzles(List<Map<String, dynamic>> jsonRows) {
     var puzzles = <Puzzle>[];
     if (jsonRows.isNotEmpty) {
       for (var jsonRow in jsonRows) {
@@ -68,20 +59,20 @@ class Repository {
     }
     return puzzles;
   }
-
-  void puzzleDeleteIsTickedReset() {
-    puzzleDeleteIsTicked.clear();
-  }
+//
+//  void puzzleDeleteIsTickedReset() {
+//    puzzleDeleteIsTicked.clear();
+//  }
 
   /// Returns all Puzzles for album, if not null; else, all cards
-  Future<List<Puzzle>> getPuzzles({int albumId}) async {
+  static Future<List<Puzzle>> getPuzzles({int albumId}) async {
     final List<Puzzle> puzzles = (albumId == null
         ? await _getPuzzles()
         : await _getPuzzlesByAlbumId(albumId));
 
     final cards = <Puzzle>[];
     for (Puzzle puzzle in puzzles) {
-      bool shouldDelete = puzzleDeleteIsTicked[puzzle.id] ?? false;
+//      bool shouldDelete = puzzleDeleteIsTicked[puzzle.id] ?? false;
       cards.add(Puzzle(id: puzzle.id, label: puzzle.label, thumb: puzzle.thumb));
     }
     return cards;

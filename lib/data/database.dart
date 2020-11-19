@@ -20,8 +20,8 @@ class DBProvider {
   static Database _database;
 
   // Make class a singleton
-  DBProvider._private() {
-  }
+  DBProvider._private();
+
   static final DBProvider db = DBProvider._private();
 
   Future<Database> get database async {
