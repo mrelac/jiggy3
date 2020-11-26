@@ -33,10 +33,6 @@ class PuzzlesBloc implements BlocBase {
   void dispose() {
     _puzzlesController.close();
     _addPuzzleController.close();
-
-
-
-    _counterController.close();
   }
 
   void getPuzzles() async {
@@ -53,16 +49,4 @@ class PuzzlesBloc implements BlocBase {
     // newly added puzzle card.
     getPuzzles();
   }
-
-
-
-
-  // FIXME FIXME - New Code needs to be finished in this file.
-  final _counterController = StreamController<List<int>>.broadcast();
-  StreamSink<List<int>> get _inIncrement => _counterController.sink;
-  Stream<List<int>> get increment => _counterController.stream;
-
-  StreamSink<List<int>> get _inDeccrement => _counterController.sink;
-  Stream<List<int>> get decrement => _counterController.stream;
-
 }

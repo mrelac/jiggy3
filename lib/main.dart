@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:jiggy3/data/repository.dart';
 
 import 'blocs/bloc_provider.dart';
-import 'blocs/puzzles_bloc.dart';
+import 'blocs/counter_bloc.dart';
 
 void main() {
   runApp(Jiggy3());
@@ -15,7 +14,7 @@ class Jiggy3 extends StatelessWidget {
     final title = 'Jiggy!';
 
 
-//    Repository.deleteJiggyDatabase();
+   // Repository.deleteJiggyDatabase();
 
 
     return MaterialApp(
@@ -36,9 +35,8 @@ class Jiggy3 extends StatelessWidget {
           ),
         // Inject the PuzzleCardsBloc to get the latest data later
         home: BlocProvider(
-          bloc: PuzzlesBloc(),
+          bloc: CounterBloc(),
           child: MyHomePage(title: 'Jiggy!'),
-//          child: ChooserPage(),
           )
         );
   }
@@ -47,15 +45,6 @@ class Jiggy3 extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -63,270 +52,207 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  PuzzlesBloc _puzzlesBloc;
+  CounterBloc _counterBloc;
 
   @override
   void initState() {
     super.initState();
-    _puzzlesBloc = BlocProvider.of<PuzzlesBloc>(context);
+    _counterBloc = BlocProvider.of<CounterBloc>(context);
   }
 
   void _incrementCounter() {
-//    setState(() {
-//      // This call to setState tells the Flutter framework that something has
-//      // changed in this State, which causes it to rerun the build method below
-//      // so that the display can reflect the updated values. If we changed
-//      // _counter without calling setState(), then the build method would not be
-//      // called again, and so nothing would appear to happen.
-//      _counter++;
-//    });
-
-    _puzzlesBloc.puzzles.listen((event) {
-      _puzzlesBloc.increment;
-    });
+    _counterBloc.increment();
   }
 
   void _decrementCounter() {
-//    setState(() { _counter--; });
-
-    _puzzlesBloc.puzzles.listen((event) {
-      _puzzlesBloc.decrement;
-    });
+    _counterBloc.decrement();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:', textScaleFactor: 3.0,
+    return StreamBuilder<int>(
+      stream: BlocProvider.of<CounterBloc>(context).counterStream,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Center(
+            child: Container(
+              height: 180.0,
+              width: 180.0,
+              child: CircularProgressIndicator(),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-              textScaleFactor: 3.0,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: Row(mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: FloatingActionButton(
-              heroTag: Key('1'),
-              onPressed: _incrementCounter,
-              tooltip: 'Increment',
-              child: Icon(Icons.add),
+          );
+        }
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.title),
+          ),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  'You have pushed the button this many times:', textScaleFactor: 3.0,
+                ),
+                Text(
+                  '${snapshot.data}',
+                  style: Theme.of(context).textTheme.headline4,
+                  textScaleFactor: 3.0,
+                ),
+              ],
             ),
           ),
-
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: FloatingActionButton(
-              heroTag: Key('2'),
-              onPressed: _decrementCounter,
-              tooltip: 'Decrement',
-              child: Icon(Icons.remove),
+          floatingActionButton: Row(mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: FloatingActionButton(
+                  heroTag: Key('1'),
+                  onPressed: _incrementCounter,
+                  tooltip: 'Increment',
+                  child: Icon(Icons.add),
+                ),
               ),
+
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: FloatingActionButton(
+                  heroTag: Key('2'),
+                  onPressed: _decrementCounter,
+                  tooltip: 'Decrement',
+                  child: Icon(Icons.remove),
+                  ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+                child: FloatingActionButton(
+                  heroTag: Key('3'),
+                  onPressed: () async {
+                    await _navigateToSecondPage();
+                  },
+                  tooltip: 'Next Page',
+                  child: Icon(Icons.navigate_next),
+                  ),
+                ),
+            ],
           ),
-
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
-            child: FloatingActionButton(
-              heroTag: Key('3'),
-              onPressed: () async {
-                await _navigateToNote(_counter);
-              },
-              tooltip: 'Next Page',
-              child: Icon(Icons.navigate_next),
-              ),
-            ),
-        ],
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        );
+      }
     );
-
   }
-  void _navigateToNote(int counter) async {
-    // Push ViewNotePage, and store any return value in update. This will
-    // be used to tell this page to refresh the note list after one is deleted.
-    // If a note isn't deleted, this will be set to null and the note list will
-    // not be refreshed.
+
+  void _navigateToSecondPage() async {
     int update = await Navigator.of(context).push(
       MaterialPageRoute(
-        // Once again, use the BlocProvider to pass the ViewNoteBloc
-        // to the ViewNotePage
         builder: (context) => BlocProvider(
-          bloc: PuzzlesBloc(),
+          bloc: CounterBloc(),
           child: MySecondPage(
             title: 'My Second Page',
-            counter: counter,
             ),
-          ),
+        ),
         ),
       );
 
-    // If update was set, get all the puzzle cards again
+    // Update contains the changed counter value, or null if the counter didn't change.
     if (update != null) {
-      setState(() {
-        _counter = update;
-      });
-//        _puzzleCardsBloc.puzzleCards();
+      _counterBloc.setCounter(update);
     }
   }
 }
 
 
 class MySecondPage extends StatefulWidget {
-  MySecondPage({Key key, this.title, this.counter}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  MySecondPage({Key key, this.title}) : super(key: key);
 
   final String title;
-  final int counter;
 
   @override
   _MySecondPageState createState() => _MySecondPageState();
 }
 
 class _MySecondPageState extends State<MySecondPage> {
-  int _counter;
+  CounterBloc _counterBloc;
 
 
   @override
   void initState() {
     super.initState();
-    _counter = widget.counter;
+    _counterBloc = BlocProvider.of<CounterBloc>(context);
   }
 
   void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+    _counterBloc.increment();
   }
+
   void _decrementCounter() {
-    setState(() { _counter--; });
+    _counterBloc.decrement();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return WillPopScope(
-      child: Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-          ),
-        body: Center(
-          // Center is a layout widget. It takes a single child and positions it
-          // in the middle of the parent.
-          child: Column(
-            // Column is also a layout widget. It takes a list of children and
-            // arranges them vertically. By default, it sizes itself to fit its
-            // children horizontally, and tries to be as tall as its parent.
-            //
-            // Invoke "debug painting" (press "p" in the console, choose the
-            // "Toggle Debug Paint" action from the Flutter Inspector in Android
-            // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-            // to see the wireframe for each widget.
-            //
-            // Column has various properties to control how it sizes itself and
-            // how it positions its children. Here we use mainAxisAlignment to
-            // center the children vertically; the main axis here is the vertical
-            // axis because Columns are vertical (the cross axis would be
-            // horizontal).
-            mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'You have pushed the button this many times:', textScaleFactor: 3.0,
-                  ),
-                Text(
-                  '$_counter',
-                  style: Theme.of(context).textTheme.headline4,
-                  textScaleFactor: 3.0,
-                  ),
-              ],
+    return StreamBuilder<int>(
+      stream: BlocProvider.of<CounterBloc>(context).counterStream,
+      builder: (context, snapshot) {
+
+        if ( ! snapshot.hasData) {
+          return Center(
+            child: Container(
+              height: 180.0,
+              width: 180.0,
+              child: CircularProgressIndicator(),
             ),
-          ),
-        floatingActionButton: Row(mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: FloatingActionButton(
-                                          heroTag: Key('4'),
-                                          onPressed: _incrementCounter,
-                                          tooltip: 'Increment',
-                                          child: Icon(Icons.add),
-                                          ),
-                                        ),
+          );
+        }
+        return WillPopScope(
+          child: Scaffold(
+            appBar: AppBar(
+              title: Text(widget.title),
+              ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      'You have pushed the button this many times:', textScaleFactor: 3.0,
+                      ),
+                    Text(
+                      '${snapshot.data}',
+                      style: Theme.of(context).textTheme.headline4,
+                      textScaleFactor: 3.0,
+                      ),
+                  ],
+                ),
+              ),
+                floatingActionButton: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FloatingActionButton(
+                        heroTag: Key('4'),
+                        onPressed: _incrementCounter,
+                        tooltip: 'Increment',
+                        child: Icon(Icons.add),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FloatingActionButton(
+                        heroTag: Key('5'),
+                        onPressed: _decrementCounter,
+                        child: Icon(Icons.remove),
+                      ),
+                    ),
+                  ],
+                ), // This trailing comma makes auto-formatting nicer for build methods.
+            ),
+          onWillPop: () {
+            Navigator.pop(context, snapshot.data);
 
-                                      Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: FloatingActionButton(
-                                          heroTag: Key('5'),
-                                          onPressed: _decrementCounter,
-                                          tooltip: 'Decrement',
-                                          child: Icon(Icons.remove),
-                                          ),
-                                        ),
-                                    ],
-                                  ), // This trailing comma makes auto-formatting nicer for build methods.
-        ),
-      onWillPop: () {
-        Navigator.pop(context, _counter);
-
-        return Future.value(false);
+            return Future.value(false);
+          }
+        );
       }
     );
   }
 }
-
