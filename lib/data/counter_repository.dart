@@ -1,5 +1,3 @@
-
-
 /// This file is used for testing state/model persistence using bloc streams.
 @deprecated
 class CounterRepository {

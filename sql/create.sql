@@ -1,8 +1,7 @@
 DROP TABLE IF EXISTS album;
 CREATE TABLE IF NOT EXISTS album(
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  name             TEXT NOT NULL UNIQUE,
-  is_selectable    INTEGER DEFAULT 1
+  name             TEXT NOT NULL UNIQUE
 );
 
 

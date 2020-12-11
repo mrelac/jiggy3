@@ -1,94 +1,138 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:jiggy3/data/jiggy_filesystem.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:jiggy3/services/chooser_service.dart';
+import 'package:jiggy3/services/image_service.dart';
+import 'package:jiggy3/utilities/image_utilities.dart';
 
 import 'database.dart';
 
+const ASSETS_PATH = 'assets/puzzles.json';
+const THUMB_WIDTH = 120.0;
+
 class Repository {
+  // ALBUMS
 
-  Repository._private();
-
-  static Future<Puzzle> createPuzzle(Puzzle puzzle) async {
-    return await DBProvider.db.createPuzzle(puzzle);
-  }
-
-  static Future<void> deleteJiggyDatabase() async {
-    return await DBProvider.db.deleteJiggyDatabase();
-  }
-
-
-
-  static Future<List<Puzzle>> getPuzzlesByAlbum(Album album) async {
-    List<Map<String, dynamic>> jsonRows =
-        await DBProvider.db.getPuzzlesByAlbum(album.id);
-    var puzzles = <Puzzle>[];
-    for (var jsonRow in jsonRows) {
-      puzzles.add(Puzzle.fromMap(jsonRow));
-    }
-    return puzzles;
-  }
-
+  /// Returns all albums and their puzzles. The returned list of albums will
+  /// never be empty, as the non-editable albums 'All' and 'Saved' are always
+  /// returned, even if there are no puzzles.
   static Future<List<Album>> getAlbums() async {
-    List<Map<String, dynamic>> jsonRows = await DBProvider.db.getAlbums();
-    var albums = <Album>[];
-    for (var jsonRow in jsonRows) {
-      albums.add(Album.fromMap(jsonRow));
-    }
-    return albums;
+    return <Album>[]
+      ..add(await _getAlbumSaved())
+      ..add(await _getAlbumAll())
+      ..addAll(await DBProvider.db.getAlbums());
   }
 
-  static Future<List<Puzzle>> _getPuzzles() async {
-    final List<Map<String, dynamic>> jsonRows =
-        await DBProvider.db.getPuzzles();
-    return _jsonToPuzzles(jsonRows);
+  /// Create albums. Non-selectable albums are filtered out. The only fields in
+  /// each Puzzle that are used are name and imageLocation, starting
+  /// with e.g.:
+  ///  - ASSET IMAGE PATH: an imageLocation file path starting with 'assets'
+  ///  - FILE IMAGE PATH: an imageLocation file path starting with '/'
+  ///  - NETWORK IMAGE PATH: an imageLocation network path starting with 'http'
+  ///
+  /// Steps:
+  ///  - For each album:
+  ///    - Create puzzles
+  ///    - Add puzzles to database
+  ///  - Insert album and its puzzle bindings into the database
+  static Future<void> createAlbums(List<Album> albums) async {
+    albums.where((album) => album.isSelectable).forEach((album) async {
+      await createPuzzles(album.puzzles);
+      await DBProvider.db.insertAlbums(albums);
+    });
   }
 
-  static Future<List<Puzzle>> _getPuzzlesByAlbumId(int albumId) async {
-    final List<Map<String, dynamic>> jsonRows =
-        await DBProvider.db.getPuzzlesByAlbum(albumId);
-    return _jsonToPuzzles(jsonRows);
+  /// Delete albums from database.  Removes bindings first.
+  /// Album puzzles are NOT deleted.
+  static Future<void> deleteAlbums(List<Album> albums) async {
+    await DBProvider.db.deleteAlbums(albums);
   }
 
-  static List<Puzzle> _jsonToPuzzles(List<Map<String, dynamic>> jsonRows) {
-    var puzzles = <Puzzle>[];
-    if (jsonRows.isNotEmpty) {
-      for (var jsonRow in jsonRows) {
-        Puzzle p = Puzzle.fromMap(jsonRow);
-        puzzles.add(p);
-      }
-    }
-    return puzzles;
-  }
-//
-//  void puzzleDeleteIsTickedReset() {
-//    puzzleDeleteIsTicked.clear();
-//  }
+  // Puzzles
 
-  /// Returns all Puzzles for album, if not null; else, all cards
-  static Future<List<Puzzle>> getPuzzles({int albumId}) async {
-    final List<Puzzle> puzzles = (albumId == null
-        ? await _getPuzzles()
-        : await _getPuzzlesByAlbumId(albumId));
-
-    final cards = <Puzzle>[];
-    for (Puzzle puzzle in puzzles) {
-//      bool shouldDelete = puzzleDeleteIsTicked[puzzle.id] ?? false;
-      cards.add(Puzzle(id: puzzle.id, label: puzzle.label, thumb: puzzle.thumb));
-    }
-    return cards;
+  // Get all puzzles
+  static Future<List<Puzzle>> getPuzzles() async {
+    return (await DBProvider.db.getPuzzles());
   }
 
-//  PlayState get playState {
-//    if (maxPieces == -1) {
-//      return PlayState.neverPlayed;
-//    } else if (piecesLocked.length == maxPieces) {
-//      return PlayState.completed;
-//    } else {
-//      return PlayState.inProgress;
-//    }
-//  }
+  /// Create puzzles. The only fields in each Puzzle that are used are
+  /// name and imageLocation, starting with e.g.:
+  ///  - ASSET IMAGE PATH: an imageLocation file path starting with 'assets'
+  ///  - FILE IMAGE PATH: an imageLocation file path starting with '/'
+  ///  - NETWORK IMAGE PATH: an imageLocation network path starting with 'http'
+  ///
+  /// Steps:
+  ///  - For each puzzle:
+  ///    - Create source image file path from imageLocation
+  ///    - Create target image file path from puzzle name
+  ///    - Copy image file from source to target
+  ///    - Update puzzle fields (thumb, imageLocation, imageWidth, imageHeight)
+  ///  - Add puzzles to database.
+  static Future<void> createPuzzles(List<Puzzle> puzzles) async {
+    puzzles.forEach((puzzle) async {
+      Uint8List sourceBytes =
+          await ChooserService.readImageBytesFromLocation(puzzle.imageLocation);
+      String targetLocation =
+          await JiggyFilesystem.createTargetImagePath(puzzle.name);
+      Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
+      await JiggyFilesystem.imageBytesSave(sourceBytes, File(targetLocation));
+      puzzle
+        ..thumb = ImageService.resizeBytes(sourceBytes, THUMB_WIDTH)
+        ..imageLocation = targetLocation
+        ..imageWidth = size.width
+        ..imageHeight = size.height;
+    });
+    await DBProvider.db.insertPuzzles(puzzles);
+  }
 
-// Repository getters and setters here. These are async methods returning
-// futures, but the data source (e.g. database, internet, file system) are
-// masked by these public methods.
+  /// Delete puzzle images from device storage and delete puzzles and bindings
+  /// from database.
+  static Future<void> deletePuzzles(List<Puzzle> puzzles) async {
+    puzzles.forEach((puzzle) async =>
+        await JiggyFilesystem.imageFileDelete(File(puzzle.imageLocation)));
+    await DBProvider.db.deletePuzzles(puzzles);
+  }
+
+  /// Reset the application: drop and create database and image storage file
+  /// directories and load seed albums from assets.
+  static Future<void> applicationReset() async {
+    await DBProvider.db.deleteJiggyDatabase();
+    await JiggyFilesystem.appImagesDirectoryDelete();
+    await JiggyFilesystem.appImagesDirectoryCreate();
+
+    String jsonStr = await rootBundle.loadString(ASSETS_PATH);
+    List<dynamic> jsonData = jsonDecode(jsonStr);
+    final albums = <Album>[];
+    jsonData
+        .forEach((jsonAlbum) => albums.add(Album.fromMap(jsonAlbum['album'])));
+
+    print('albums: $albums');
+    await createAlbums(albums);
+  }
+
+  // PRIVATE METHODS
+
+  /// Returns a single album named 'all' containing all unique puzzles
+  static Future<Album> _getAlbumAll() async {
+    final List<Puzzle> puzzles = await DBProvider.db.getPuzzles();
+    return Album(isSelectable: false, name: 'All', puzzles: puzzles);
+  }
+
+  // Returns a single album named 'Saved' containing all puzzles in progress
+  static Future<Album> _getAlbumSaved() async {
+    // throw Exception('Not implemented yet');
+    // FIXME Add logic to return Saved puzzles
+    // FIXME Add logic to return Saved puzzles
+    // FIXME Add logic to return Saved puzzles
+    // FIXME Add logic to return Saved puzzles
+    // FIXME Add logic to return Saved puzzles
+    return Album(isSelectable: false, name: 'Saved', puzzles: []);
+  }
 }

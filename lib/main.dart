@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jiggy3/blocs/chooser_bloc.dart';
+import 'package:jiggy3/pages/chooser_page.dart';
+import 'package:provider/provider.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:provider/provider.dart';
+// import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'blocs/bloc_provider.dart';
+// import 'blocs/bloc_provider.dart';
+// import 'blocs/bloc_provider.dart';
 import 'blocs/counter_bloc.dart';
+import 'blocs/puzzles_bloc.dart';
+import 'blocs/puzzles_bloc.dart';
+import 'data/repository.dart';
 
 void main() {
   runApp(Jiggy3());
@@ -14,7 +25,7 @@ class Jiggy3 extends StatelessWidget {
     final title = 'Jiggy!';
 
 
-   // Repository.deleteJiggyDatabase();
+   // Repository.dropAndRebuildDatabase();
 
 
     return MaterialApp(
@@ -34,10 +45,26 @@ class Jiggy3 extends StatelessWidget {
           textSelectionHandleColor: Colors.green[500],
           ),
         // Inject the PuzzleCardsBloc to get the latest data later
-        home: BlocProvider(
-          bloc: CounterBloc(),
-          child: MyHomePage(title: 'Jiggy!'),
-          )
+
+      home: MultiProvider(
+        providers: [
+          BlocProvider(create: (BuildContext context) => CounterBloc()),
+          // BlocProvider(create: (BuildContext context) => PuzzlesBloc()),
+          BlocProvider(create: (BuildContext context) => ChooserBloc()),
+        ],
+        // child: MyHomePage(title: 'Jiggy!'),
+        child: ChooserPage(title: 'Jiggy!'),
+      ),
+
+      // home: BlocProvider(
+        //   bloc: CounterBloc(),
+        //   child: BlocProvider(
+        //     bloc: PuzzlesBloc(),
+        //       child: MyHomePage(title: 'Jiggy!')),
+        //   )
+
+
+
         );
   }
 }
@@ -52,24 +79,30 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  CounterBloc _counterBloc;
+  // CounterBloc _counterBloc;
+  // PuzzlesBloc _puzzlesBloc;
 
   @override
   void initState() {
     super.initState();
-    _counterBloc = BlocProvider.of<CounterBloc>(context);
+    // _counterBloc = BlocProvider.of<CounterBloc>(context);
+    // _puzzlesBloc = BlocProvider.of<PuzzlesBloc>(context);
   }
 
-  void _incrementCounter() {
-    _counterBloc.increment();
-  }
-
-  void _decrementCounter() {
-    _counterBloc.decrement();
-  }
+  // void _incrementCounter(BuildContext context) {
+  //   CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
+  //   _counterBloc.increment();
+  // }
+  //
+  // void _decrementCounter(BuildContext context) {
+  //   CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
+  //   _counterBloc.decrement();
+  // }
 
   @override
   Widget build(BuildContext context) {
+    CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
+    // Stream<int> ii = BlocProvider.of<CounterBloc>(context).counterStream;
     return StreamBuilder<int>(
       stream: BlocProvider.of<CounterBloc>(context).counterStream,
       builder: (context, snapshot) {
@@ -98,6 +131,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   style: Theme.of(context).textTheme.headline4,
                   textScaleFactor: 3.0,
                 ),
+
+
+
+
               ],
             ),
           ),
@@ -107,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: FloatingActionButton(
                   heroTag: Key('1'),
-                  onPressed: _incrementCounter,
+                  onPressed: () => _counterBloc.increment(),
                   tooltip: 'Increment',
                   child: Icon(Icons.add),
                 ),
@@ -117,7 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 padding: const EdgeInsets.all(8.0),
                 child: FloatingActionButton(
                   heroTag: Key('2'),
-                  onPressed: _decrementCounter,
+                  onPressed: () => _counterBloc.decrement(),
                   tooltip: 'Decrement',
                   child: Icon(Icons.remove),
                   ),
@@ -142,10 +179,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _navigateToSecondPage() async {
+    CounterBloc _counterBloc = Provider.of<CounterBloc>(context, listen: false);
     int update = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BlocProvider(
-          bloc: CounterBloc(),
+          create: (BuildContext context) => CounterBloc() ,
           child: MySecondPage(
             title: 'My Second Page',
             ),
@@ -171,25 +209,26 @@ class MySecondPage extends StatefulWidget {
 }
 
 class _MySecondPageState extends State<MySecondPage> {
-  CounterBloc _counterBloc;
+  // CounterBloc _counterBloc;
 
 
   @override
   void initState() {
     super.initState();
-    _counterBloc = BlocProvider.of<CounterBloc>(context);
+    // _counterBloc = BlocProvider.of<CounterBloc>(context);
   }
 
-  void _incrementCounter() {
-    _counterBloc.increment();
-  }
-
-  void _decrementCounter() {
-    _counterBloc.decrement();
-  }
+  // void _incrementCounter() {
+  //   _counterBloc.increment();
+  // }
+  //
+  // void _decrementCounter() {
+  //   _counterBloc.decrement();
+  // }
 
   @override
   Widget build(BuildContext context) {
+    CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
     return StreamBuilder<int>(
       stream: BlocProvider.of<CounterBloc>(context).counterStream,
       builder: (context, snapshot) {
@@ -230,7 +269,7 @@ class _MySecondPageState extends State<MySecondPage> {
                       padding: const EdgeInsets.all(8.0),
                       child: FloatingActionButton(
                         heroTag: Key('4'),
-                        onPressed: _incrementCounter,
+                        onPressed: () => _counterBloc.increment(),
                         tooltip: 'Increment',
                         child: Icon(Icons.add),
                       ),
@@ -239,7 +278,7 @@ class _MySecondPageState extends State<MySecondPage> {
                       padding: const EdgeInsets.all(8.0),
                       child: FloatingActionButton(
                         heroTag: Key('5'),
-                        onPressed: _decrementCounter,
+                        onPressed: () => _counterBloc.decrement(),
                         child: Icon(Icons.remove),
                       ),
                     ),

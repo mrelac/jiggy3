@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 
 class Puzzle {
   int id;
-  String label;
+  String name;
   Uint8List thumb;
   String imageLocation;
   double imageWidth;
@@ -29,7 +29,7 @@ class Puzzle {
 
   Puzzle({
     this.id,
-    @required this.label,
+    @required this.name,
     @required this.thumb,
     @required this.imageLocation,
     @required this.imageWidth,
@@ -46,32 +46,42 @@ class Puzzle {
   }
 
   Puzzle.fromMap(Map json) :
-        assert(json['id'] != null),
-        assert(json['label'] != null),
-        assert(json['thumb_blob'] != null),
+        // assert(json['id'] != null),
+        assert(json['name'] != null),
+        // assert(json['thumb_blob'] != null),
         assert(json['location'] != null),
-        assert(json['image_width'] != null),
-        assert(json['image_height'] != null),
-        assert(json['image_colour_r'] != null),
-        assert(json['image_colour_g'] != null),
-        assert(json['image_colour_b'] != null),
-        assert(json['image_opacity'] != null),
+        // assert(json['image_width'] != null),
+        // assert(json['image_height'] != null),
+        // assert(json['image_colour_r'] != null),
+        // assert(json['image_colour_g'] != null),
+        // assert(json['image_colour_b'] != null),
+        // assert(json['image_opacity'] != null),
 
         id = json['id'],
-        label = json['label'],
-        thumb = base64Decode(json['thumb_blob']),
+        name = json['name'],
+        // thumb = base64Decode(json['thumb_blob']),
         imageLocation = json['location'],
         imageWidth = json['image_width'],
         imageHeight = json['image_height'],
-        imageColour = Color.fromRGBO(
-            json['image_colour_r'],
-            json['image_colour_g'],
-            json['image_colour_b'],
-            json['image_opacity']),
+        // imageColour = Color.fromRGBO(
+        //     json['image_colour_r'],
+        //     json['image_colour_g'],
+        //     json['image_colour_b'],
+        //     json['image_opacity']),
         imageOpacity = json['image_opacity'] {
     File imageFile = File(imageLocation);
     if (json['max_pieces'] != null) {
       this.maxPieces = json['max_pieces'];
+    }
+    if (json['thumb'] != null) {
+      this.thumb = base64Decode(json['thumb_blob']);
+    }
+    if (json['image_colour_r'] != null) {
+      imageColour = Color.fromRGBO(
+          json['image_colour_r'],
+          json['image_colour_g'],
+          json['image_colour_b'],
+          json['image_opacity']);
     }
   }
 
@@ -80,14 +90,14 @@ class Puzzle {
       identical(this, other) ||
           other is Puzzle &&
               runtimeType == other.runtimeType &&
-              label.toLowerCase() == other.label.toLowerCase();
+              name.toLowerCase() == other.name.toLowerCase();
 
   @override
-  int get hashCode => label.hashCode;
+  int get hashCode => name.hashCode;
 
   @override
   String toString() {
-    return 'Puzzle{id: $id, label: $label, imageLocation: $imageLocation, '
+    return 'Puzzle{id: $id, name: $name, imageLocation: $imageLocation, '
         'imageWidth: $imageWidth, imageHeight: $imageHeight, '
         'maxPieces: $maxPieces}';
   }

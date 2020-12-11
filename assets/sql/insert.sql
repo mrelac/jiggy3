@@ -1,12 +1,12 @@
 BEGIN;
 INSERT INTO album
-  (id, name, is_selectable)
+  (id, name)
 VALUES
-  (1, 'Saved',     0),
-  (2, 'All',       0),
-  (3, 'Mountains', 1),
-  (4, 'Places',    1),
-  (5, 'Flowers',   1);
+  (1, 'Saved'),
+  (2, 'All'),
+  (3, 'Mountains'),
+  (4, 'Places'),
+  (5, 'Flowers');
 
 COMMIT;
 
