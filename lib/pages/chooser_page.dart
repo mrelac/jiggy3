@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/widgets/album_builder.dart';
+import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/chooser_card.dart';
 import 'package:provider/provider.dart';
 
@@ -11,38 +12,33 @@ import 'package:provider/provider.dart';
 ///   is executed only once.
 class ChooserPage extends StatefulWidget {
   final String title;
-
-  ChooserPage({Key key, this.title});
-
+  bool applicationResetRequested;
+  ChooserPage({Key key, @required this.title, this.applicationResetRequested: false});
   _ChooserPageState createState() => _ChooserPageState();
 }
 
 class _ChooserPageState extends State<ChooserPage> {
-  bool isEditing;
-
+  bool _isEditing;
   @override
   void initState() {
-    this.isEditing = false;
+    super.initState();
+    this._isEditing = false;
   }
 
   @override
   Widget build(BuildContext context) {
     ChooserBloc albumsBloc = Provider.of<ChooserBloc>(context);
 
-
-    albumsBloc.applicationReset();
-
-
+    if (widget.applicationResetRequested) {
+      ChooserBloc albumsBloc = Provider.of<ChooserBloc>(context);
+      albumsBloc.applicationReset();
+      widget.applicationResetRequested = false;
+    }
 
     return Material(
       child: StreamBuilder<List<Album>>(
           stream: albumsBloc.albumsStream,
-
           builder: (context, snapshot) {
-
-
-
-
             if (snapshot.hasData) {
               return Container(
                   child: CustomScrollView(
@@ -55,7 +51,7 @@ class _ChooserPageState extends State<ChooserPage> {
               ));
             }
 
-            return CircularProgressIndicator();
+            return BusyIndicator();
           }),
     );
   }
@@ -76,10 +72,10 @@ class _ChooserPageState extends State<ChooserPage> {
     ChooserBloc albumsBloc = Provider.of<ChooserBloc>(context);
     return [
       AlbumBuilder(
-          isEditing: isEditing,
+          isEditing: _isEditing,
           album: album,
           onLongPressed: () {
-            if ( ! isEditing)
+            if ( ! _isEditing)
               enableEditingMode(albumsBloc);
           }),
       Container(
@@ -88,7 +84,7 @@ class _ChooserPageState extends State<ChooserPage> {
             scrollDirection: Axis.horizontal,
             itemCount: album.puzzles.length,
             itemBuilder: (BuildContext context, int index) {
-              if (isEditing) {
+              if (_isEditing) {
                 return Container(
                   key: Key('$index'),
                   color: Colors.orange[50],
@@ -118,7 +114,7 @@ class _ChooserPageState extends State<ChooserPage> {
   }
 
   void enableEditingMode(ChooserBloc albumsBloc) {
-    isEditing = true;
+    _isEditing = true;
     albumsBloc.clearAlbumsMarkedForDelete();
   }
 }

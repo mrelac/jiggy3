@@ -3,30 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/pages/chooser_page.dart';
 import 'package:provider/provider.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:provider/provider.dart';
-// import 'package:flutter_bloc/flutter_bloc.dart';
 
-// import 'blocs/bloc_provider.dart';
-// import 'blocs/bloc_provider.dart';
 import 'blocs/counter_bloc.dart';
-import 'blocs/puzzles_bloc.dart';
-import 'blocs/puzzles_bloc.dart';
-import 'data/repository.dart';
 
 void main() {
   runApp(Jiggy3());
 }
 
+const ARG_RESET = String.fromEnvironment('applicationReset', defaultValue: 'false');
+
 class Jiggy3 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-//    globals.createDatabase = createDatabaseFlag?.toLowerCase() == "true";
     final title = 'Jiggy!';
-
-
-   // Repository.dropAndRebuildDatabase();
-
+    final bool resetApplication = ARG_RESET.toLowerCase() == 'true';
 
     return MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -53,7 +43,7 @@ class Jiggy3 extends StatelessWidget {
           BlocProvider(create: (BuildContext context) => ChooserBloc()),
         ],
         // child: MyHomePage(title: 'Jiggy!'),
-        child: ChooserPage(title: 'Jiggy!'),
+        child: ChooserPage(title: 'Jiggy!', applicationResetRequested: resetApplication),
       ),
 
       // home: BlocProvider(
@@ -79,26 +69,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // CounterBloc _counterBloc;
-  // PuzzlesBloc _puzzlesBloc;
-
-  @override
-  void initState() {
-    super.initState();
-    // _counterBloc = BlocProvider.of<CounterBloc>(context);
-    // _puzzlesBloc = BlocProvider.of<PuzzlesBloc>(context);
-  }
-
-  // void _incrementCounter(BuildContext context) {
-  //   CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
-  //   _counterBloc.increment();
-  // }
-  //
-  // void _decrementCounter(BuildContext context) {
-  //   CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
-  //   _counterBloc.decrement();
-  // }
-
   @override
   Widget build(BuildContext context) {
     CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
@@ -131,10 +101,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   style: Theme.of(context).textTheme.headline4,
                   textScaleFactor: 3.0,
                 ),
-
-
-
-
               ],
             ),
           ),

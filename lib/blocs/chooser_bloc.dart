@@ -9,6 +9,9 @@ import 'package:jiggy3/models/puzzle.dart';
 import 'bloc_provider.dart';
 
 class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
+
+  static bool _applicationResetting = false;
+
   // An entry in the list means object is marked for delete.
   final _albumsMarkedForDelete = Set();
   final _puzzlesMarkedForDelete = Set();
@@ -35,6 +38,10 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
       ..add(
           (await Repository.getPuzzles()).map<String>((puzzle) => puzzle.name));
     _albumsStream.sink.add(albums);
+  }
+
+  bool isApplicationResetting() {
+    return _applicationResetting;
   }
 
   /// Create albums. Non-selectable albums are filtered out. The only fields in

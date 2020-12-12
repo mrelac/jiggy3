@@ -24,7 +24,6 @@ class Album {
 
   Album.fromMap(Map jsonMap)
       : assert(jsonMap['name'] != null),
-        assert(jsonMap['puzzles'] != null),
         this.id = jsonMap['id'],
         this.name = jsonMap['name'],
         this.puzzles = jsonMap['puzzles'] == null

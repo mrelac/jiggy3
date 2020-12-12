@@ -29,11 +29,6 @@ class DBProvider {
 
   // DB ACCESS
 
-  Future<void> close() async {
-    final db = await database;
-    await db.close();
-  }
-
   Future<void> deleteJiggyDatabase() async {
     // To delete the database using deleteDatabase, do NOT include the path.
     await deleteDatabase(_dbName);
@@ -61,26 +56,24 @@ class DBProvider {
         .map((json) => Album.fromMap(json))
         .toList();
     if (albums.isNotEmpty) {
-      albums.forEach((album) async =>
-          album.puzzles.addAll(await getPuzzlesByAlbum(album.id)));
+      for (Album album in albums) {
+        album.puzzles.addAll(await getPuzzlesByAlbum(album.id));
+      }
     }
     return albums;
   }
 
-  /// Insert albums and their puzzles into the database. Throws
-  /// exception if any album or puzzle already exists.
+  /// Insert albums and puzzle bindings into the database. Puzzles themselves
+  /// are not inserted, as Repository.createPuzzles() inserts them after
+  /// installing the image files.
   Future<void> insertAlbums(List<Album> albums) async {
-    final batch = (await database).batch();
+    final db = await database;
     const insert = 'INSERT INTO album (name) VALUES (?)';
-    albums.forEach((album) async {
-      print('Inserting album ${album.name}');
-      if ((album.puzzles != null) && (album.puzzles.isNotEmpty)) {
-        _insertPuzzlesBatch(album.puzzles, batch);
-        await _insertBindings(album, album.puzzles);
-      }
-      batch.rawInsert(insert, [album.name]);
-    });
-    await batch.commit(noResult: true);
+    for (int i = 0; i < albums.length; i++) {
+      int id = await db.rawInsert(insert, [albums[i].name]);
+      albums[i] = Album(id: id, name: albums[i].name, puzzles: albums[i].puzzles);
+      await _insertBindings(albums[i], albums[i].puzzles);
+    }
   }
 
   /// Deletes albums using albumId. Removes bindings first.
@@ -104,12 +97,29 @@ class DBProvider {
   }
 
   Future<void> insertPuzzles(List<Puzzle> puzzles) async {
-    final batch = (await database).batch();
-    puzzles.forEach((puzzle) {
+    final db = await database;
+    const String insert = '''
+INSERT INTO puzzle
+  (name, thumb, image_location, image_width, image_height,
+   image_colour_r, image_colour_g, image_colour_b,
+   image_opacity, max_pieces)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+''';
+    for (Puzzle puzzle in puzzles) {
       print('Inserting puzzle ${puzzle.name}');
-      _insertPuzzlesBatch(puzzles, batch);
-    });
-    await batch.commit(noResult: true);
+      puzzle.id = await db.rawInsert(insert, [
+        puzzle.name,
+        base64Encode(puzzle.thumb),
+        puzzle.imageLocation,
+        puzzle.imageWidth,
+        puzzle.imageHeight,
+        puzzle.imageColour.red,
+        puzzle.imageColour.green,
+        puzzle.imageColour.blue,
+        puzzle.imageOpacity,
+        puzzle.maxPieces
+      ]);
+    };
   }
 
   /// Deletes puzzles using puzzle id. Removes bindings first.
@@ -131,7 +141,7 @@ class DBProvider {
 SELECT p.* FROM puzzle p
  JOIN album_puzzle ap ON ap.puzzle_id = p.id
  JOIN album a ON a.id = ap.album_id
- WHERE a.name = ?;
+ WHERE a.id = ?;
     ''';
     final db = await database;
     return ((await db.rawQuery(query, [albumId]))
@@ -146,7 +156,7 @@ SELECT p.* FROM puzzle p
     final Batch batch = (await database).batch();
     const String insert =
         'INSERT INTO album_puzzle(album_id, puzzle_id) VALUES(?, ?)';
-    puzzles.forEach((puzzle) async {
+    puzzles.forEach((puzzle) {
       print("Binding puzzle ${puzzle.name} to album ${album.name}");
       batch.rawInsert(insert, [album.id, puzzle.id]);
     });
@@ -173,32 +183,6 @@ SELECT p.* FROM puzzle p
           "DELETE FROM album_puzzle WHERE puzzle_id = ?", [puzzle.id]);
     });
     await batch.commit(noResult: true);
-  }
-
-  /// Private method to add puzzles to database using batch.
-  void _insertPuzzlesBatch(List<Puzzle> puzzles, Batch batch) {
-    const String insert = '''
-INSERT INTO puzzle
-  (name, thumb, imageLocation, image_width, image_height,
-   image_colour_r, image_colour_g, image_colour_b,
-   image_opacity, max_pieces)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-''';
-    puzzles.forEach((puzzle) async {
-      print('Inserting puzzle ${puzzle.name}');
-      batch.rawInsert(insert, [
-        puzzle.name,
-        base64Encode(puzzle.thumb),
-        puzzle.imageLocation,
-        puzzle.imageWidth,
-        puzzle.imageHeight,
-        puzzle.imageColour.red,
-        puzzle.imageColour.green,
-        puzzle.imageColour.blue,
-        puzzle.imageOpacity,
-        puzzle.maxPieces
-      ]);
-    });
   }
 
   void _createTables(Database db, int version) {

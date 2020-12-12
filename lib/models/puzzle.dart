@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:core';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -19,13 +18,13 @@ class Puzzle {
   String imageLocation;
   double imageWidth;
   double imageHeight;
-  Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, imageOpacityClear);
-  double imageOpacity = imageOpacityClear;
+  Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, IMAGE_OPACITY_CLEAR);
+  double imageOpacity = IMAGE_OPACITY_CLEAR;
   int maxPieces = -1;   // # of pieces locked to win game. -1 means 'Not yet started'
 
   bool get isPortrait => imageHeight < imageWidth;
 
-  static const double imageOpacityClear = 1.0;
+  static const double IMAGE_OPACITY_CLEAR = 1.0;
 
   Puzzle({
     this.id,
@@ -46,42 +45,27 @@ class Puzzle {
   }
 
   Puzzle.fromMap(Map json) :
-        // assert(json['id'] != null),
         assert(json['name'] != null),
-        // assert(json['thumb_blob'] != null),
-        assert(json['location'] != null),
-        // assert(json['image_width'] != null),
-        // assert(json['image_height'] != null),
-        // assert(json['image_colour_r'] != null),
-        // assert(json['image_colour_g'] != null),
-        // assert(json['image_colour_b'] != null),
-        // assert(json['image_opacity'] != null),
+        assert(json['image_location'] != null),
 
         id = json['id'],
         name = json['name'],
-        // thumb = base64Decode(json['thumb_blob']),
-        imageLocation = json['location'],
+        imageLocation = json['image_location'],
         imageWidth = json['image_width'],
         imageHeight = json['image_height'],
-        // imageColour = Color.fromRGBO(
-        //     json['image_colour_r'],
-        //     json['image_colour_g'],
-        //     json['image_colour_b'],
-        //     json['image_opacity']),
         imageOpacity = json['image_opacity'] {
-    File imageFile = File(imageLocation);
     if (json['max_pieces'] != null) {
       this.maxPieces = json['max_pieces'];
     }
     if (json['thumb'] != null) {
-      this.thumb = base64Decode(json['thumb_blob']);
+      this.thumb = base64Decode(json['thumb']);
     }
     if (json['image_colour_r'] != null) {
       imageColour = Color.fromRGBO(
           json['image_colour_r'],
           json['image_colour_g'],
           json['image_colour_b'],
-          json['image_opacity']);
+          json['image_opacity'] ?? IMAGE_OPACITY_CLEAR);
     }
   }
 

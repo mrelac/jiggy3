@@ -15,7 +15,7 @@ import 'package:jiggy3/utilities/image_utilities.dart';
 import 'database.dart';
 
 const ASSETS_PATH = 'assets/puzzles.json';
-const THUMB_WIDTH = 120.0;
+const THUMB_WIDTH = 240.0;
 
 class Repository {
   // ALBUMS
@@ -43,10 +43,12 @@ class Repository {
   ///    - Add puzzles to database
   ///  - Insert album and its puzzle bindings into the database
   static Future<void> createAlbums(List<Album> albums) async {
-    albums.where((album) => album.isSelectable).forEach((album) async {
-      await createPuzzles(album.puzzles);
-      await DBProvider.db.insertAlbums(albums);
-    });
+    for (Album album in albums) {
+      if (album.isSelectable) {
+        await createPuzzles(album.puzzles);
+      }
+    }
+    await DBProvider.db.insertAlbums(albums);
   }
 
   /// Delete albums from database.  Removes bindings first.
@@ -55,7 +57,7 @@ class Repository {
     await DBProvider.db.deleteAlbums(albums);
   }
 
-  // Puzzles
+  // PUZZLES
 
   // Get all puzzles
   static Future<List<Puzzle>> getPuzzles() async {
@@ -76,7 +78,7 @@ class Repository {
   ///    - Update puzzle fields (thumb, imageLocation, imageWidth, imageHeight)
   ///  - Add puzzles to database.
   static Future<void> createPuzzles(List<Puzzle> puzzles) async {
-    puzzles.forEach((puzzle) async {
+    for (Puzzle puzzle in puzzles) {
       Uint8List sourceBytes =
           await ChooserService.readImageBytesFromLocation(puzzle.imageLocation);
       String targetLocation =
@@ -88,7 +90,7 @@ class Repository {
         ..imageLocation = targetLocation
         ..imageWidth = size.width
         ..imageHeight = size.height;
-    });
+    };
     await DBProvider.db.insertPuzzles(puzzles);
   }
 
@@ -112,8 +114,6 @@ class Repository {
     final albums = <Album>[];
     jsonData
         .forEach((jsonAlbum) => albums.add(Album.fromMap(jsonAlbum['album'])));
-
-    print('albums: $albums');
     await createAlbums(albums);
   }
 

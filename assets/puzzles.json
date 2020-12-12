@@ -5,23 +5,23 @@
       "puzzles": [
         {
           "name": "Hallstatt",
-          "location": "assets/img/Hallstatt.jpg"
+          "image_location": "assets/img/Hallstatt.jpg"
         },
         {
           "name": "Hallstätter See",
-          "location": "assets/img/Hallstätter_See.jpg"
+          "image_location": "assets/img/Hallstätter_See.jpg"
         },
         {
           "name": "Budapest",
-          "location": "assets/img/Budapest.jpg"
+          "image_location": "assets/img/Budapest.jpg"
         },
         {
           "name": "Tower Bridge",
-          "location": "assets/img/TowerBridge.jpg"
+          "image_location": "assets/img/TowerBridge.jpg"
         },
         {
           "name": "Dow Farm",
-          "location": "assets/img/dow-farm-1.jpg"
+          "image_location": "assets/img/dow-farm-1.jpg"
         }
       ]
     }
@@ -32,7 +32,7 @@
       "puzzles": [
         {
           "name": "Flowers",
-          "location": "assets/img/Flowers.jpg"
+          "image_location": "assets/img/Flowers.jpg"
         }
       ]
     }

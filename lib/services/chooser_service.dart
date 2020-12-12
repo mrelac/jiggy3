@@ -3,18 +3,11 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
-import 'package:jiggy3/data/jiggy_filesystem.dart';
-import 'package:jiggy3/services/image_service.dart';
+import 'package:intl/intl.dart';
 
 // const double THUMB_WIDTH = 120.0;
 
 class ChooserService {
-
-  // static Future<Uint8List> readThumbBytesFromLocation(String location) async {
-  //   return ImageService.resizeBytes(
-  //       await readImageBytesFromLocation(location), THUMB_WIDTH);
-  // }
-
   /// Read asset ("asset"), network ("http"), or file ("/") asset bytes,
   /// depending on what location starts with
   static Future<Uint8List> readImageBytesFromLocation(String location) async {
@@ -31,5 +24,11 @@ class ChooserService {
       throw Exception('Unsupported image path $location');
     }
     return fullBytes;
+  }
+
+
+  static void printTime(String prefix, DateTime date) {
+    final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(date);
+    print('$prefix: $formattedDate');
   }
 }
