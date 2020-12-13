@@ -24,8 +24,10 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
   }
 
   final _albumsStream = StreamController<List<Album>>.broadcast();
-
   Stream<List<Album>> get albumsStream => _albumsStream.stream;
+
+  final _editModeStream = StreamController<bool>.broadcast();
+  Stream<bool> get editModeStream => _editModeStream.stream;
 
   void getAlbums() async {
     List<Album> albums = await Repository.getAlbums();
@@ -82,8 +84,10 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
   /// Reset the application: drop and create database and image storage file
   /// directories and load seed albums from assets.
   void applicationReset() async {
+    _applicationResetting = true;
     await Repository.applicationReset();
     getAlbums();
+    _applicationResetting = false;
   }
 
 // TODO - Implement
@@ -131,8 +135,9 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
 
   // STATE MANAGEMENT: EDITING METHODS
 
-  void clearAlbumsMarkedForDelete() {
+  void clearItemsMarkedForDelete() {
     _albumsMarkedForDelete.clear();
+    _puzzlesMarkedForDelete.clear();
     getAlbums();
   }
 
@@ -146,11 +151,6 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
         : _albumsMarkedForDelete.remove(id);
 
     print('shouldDeleteAlbum id $id: new Value: $shouldDelete');
-    getAlbums();
-  }
-
-  void clearPuzzlesMarkedForDelete() {
-    _puzzlesMarkedForDelete.clear();
     getAlbums();
   }
 
@@ -171,5 +171,6 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
   @override
   void dispose() {
     _albumsStream.close();
+    _editModeStream.close();
   }
 }

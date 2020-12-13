@@ -32,12 +32,10 @@ class Jiggy3 extends StatelessWidget {
         primaryColor: Colors.grey[500],
         textSelectionHandleColor: Colors.green[500],
       ),
-      // Inject the PuzzleCardsBloc to get the latest data later
 
       home: MultiProvider(
         providers: [
           BlocProvider(create: (BuildContext context) => CounterBloc()),
-          // BlocProvider(create: (BuildContext context) => PuzzlesBloc()),
           BlocProvider(create: (BuildContext context) => ChooserBloc()),
         ],
         // child: MyHomePage(title: 'Jiggy!'),

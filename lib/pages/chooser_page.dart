@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/widgets/album_builder.dart';
+import 'package:jiggy3/widgets/appbar_actions.dart';
 import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/chooser_card.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +15,7 @@ import 'package:provider/provider.dart';
 ///   is executed only once.
 class ChooserPage extends StatefulWidget {
   final String title;
-  bool applicationResetRequested;
+  final bool applicationResetRequested;
 
   ChooserPage(
       {Key key, @required this.title, this.applicationResetRequested: false});
@@ -26,49 +29,55 @@ class _ChooserPageState extends State<ChooserPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.applicationResetRequested) {
+      BlocProvider.of<ChooserBloc>(context).applicationReset();
+    }
+
     this._isEditing = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    ChooserBloc albumsBloc = Provider.of<ChooserBloc>(context);
+    ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
+    SystemChrome.setEnabledSystemUIOverlays([]); // Hide status bars and such
 
-    if (widget.applicationResetRequested) {
-      ChooserBloc albumsBloc = Provider.of<ChooserBloc>(context);
-      albumsBloc.applicationReset();
-      widget.applicationResetRequested = false;
-    }
-
-    return Material(
-      child: StreamBuilder<List<Album>>(
-          stream: albumsBloc.albumsStream,
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return Container(
-                  child: CustomScrollView(
-                slivers: <Widget>[
-                  SliverList(
-                    delegate: SliverChildListDelegate(
-                        buildAlbumsAndPuzzles(snapshot.data)),
-                  )
-                ],
-              ));
-            }
-
-            return BusyIndicator();
-          }),
+    return Scaffold(
+      appBar: _isEditing
+          ? _buildAppBarEditActions()
+          : _buildAppBarStandardActions(),
+      body: Material(
+        child: StreamBuilder<List<Album>>(
+            stream: chooserBloc.albumsStream,
+            builder: (context, snapshot) {
+              if ((snapshot.hasData) &&
+                  (!chooserBloc.isApplicationResetting())) {
+                return Container(
+                    child: CustomScrollView(
+                  slivers: <Widget>[
+                    SliverList(
+                      delegate: SliverChildListDelegate(
+                          _buildAlbumsAndPuzzles(snapshot.data)),
+                    )
+                  ],
+                ));
+              }
+              return BusyIndicator();
+            }),
+      ),
     );
   }
 
+  // PRIVATE METHODS
+
   /// Each album is expected to have its complete list of puzzles.
-  List<Widget> buildAlbumsAndPuzzles(List<Album> albums) {
+  List<Widget> _buildAlbumsAndPuzzles(List<Album> albums) {
     final wlist = <Widget>[];
-    albums.forEach((album) => wlist.addAll(buildAlbumAndPuzzles(album)));
+    albums.forEach((album) => wlist.addAll(_buildAlbumAndPuzzles(album)));
     return wlist;
   }
 
   /// Each album is expected to have its complete list of puzzles.
-  List<Widget> buildAlbumAndPuzzles(Album album) {
+  List<Widget> _buildAlbumAndPuzzles(Album album) {
     ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
     return [
       AlbumBuilder(
@@ -76,8 +85,8 @@ class _ChooserPageState extends State<ChooserPage> {
           album: album,
           onLongPress: () {
             if (!_isEditing) {
-              _isEditing = true;
-              chooserBloc.clearAlbumsMarkedForDelete();
+              _isEditing = !_isEditing;
+              chooserBloc.clearItemsMarkedForDelete();
             }
           }),
       Container(
@@ -105,20 +114,43 @@ class _ChooserPageState extends State<ChooserPage> {
                   key: Key('$index'),
                   color: Colors.orange[50],
                   child: ChooserCard(
-                      name: album.puzzles[index].name,
-                      thumb: album.puzzles[index].thumb,
-                      onLongPress: () {
-                        if (!_isEditing) {
-                          _isEditing = true;
-                          chooserBloc.clearAlbumsMarkedForDelete();
-                        }
+                    name: album.puzzles[index].name,
+                    thumb: album.puzzles[index].thumb,
+                    onLongPress: () {
+                      if (!_isEditing) {
+                        _isEditing = !_isEditing;
+                        chooserBloc.clearItemsMarkedForDelete();
                       }
-                      // onTap: onTap,
-                      ),
+                    },
+                    onTap: () =>
+                        print('puzzle ${album.puzzles[index].name} tapped'),
+                  ),
                 );
               }
             }),
       ),
     ];
+  }
+
+  Widget _buildAppBarEditActions() {
+    return AppBar(
+      leading: IconButton(
+        iconSize: 40.0,
+        icon: Icon(Icons.cancel),
+        // onPressed: () => _onEditingCanceled(),
+      ),
+      backgroundColor: Colors.green[100],
+      actions: AppBarActions.buildAppBaEditActions(),
+    );
+  }
+
+  Widget _buildAppBarStandardActions() {
+    return AppBar(
+      centerTitle: true,
+      title: Text("Jiggy!"),
+      backgroundColor: Colors.amber[100],
+      elevation: 0.0,
+      actions: AppBarActions.buildAppBarStandardActions(),
+    );
   }
 }
