@@ -125,7 +125,7 @@ class ChooserCardEditing extends StatelessWidget {
             top: 0,
             left: 0,
             child: Checkbox(
-              value: isDeleteTicked,
+              value: isDeleteTicked ?? false,
               onChanged: onDeleteToggle,
             ),
           ),

@@ -13,12 +13,16 @@ import 'package:provider/provider.dart';
 class ChooserPage extends StatefulWidget {
   final String title;
   bool applicationResetRequested;
-  ChooserPage({Key key, @required this.title, this.applicationResetRequested: false});
+
+  ChooserPage(
+      {Key key, @required this.title, this.applicationResetRequested: false});
+
   _ChooserPageState createState() => _ChooserPageState();
 }
 
 class _ChooserPageState extends State<ChooserPage> {
   bool _isEditing;
+
   @override
   void initState() {
     super.initState();
@@ -59,24 +63,22 @@ class _ChooserPageState extends State<ChooserPage> {
   /// Each album is expected to have its complete list of puzzles.
   List<Widget> buildAlbumsAndPuzzles(List<Album> albums) {
     final wlist = <Widget>[];
-
-    for (Album album in albums) {
-      wlist.addAll(buildAlbumAndPuzzles(album));
-    }
-
+    albums.forEach((album) => wlist.addAll(buildAlbumAndPuzzles(album)));
     return wlist;
   }
 
   /// Each album is expected to have its complete list of puzzles.
   List<Widget> buildAlbumAndPuzzles(Album album) {
-    ChooserBloc albumsBloc = Provider.of<ChooserBloc>(context);
+    ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
     return [
       AlbumBuilder(
           isEditing: _isEditing,
           album: album,
-          onLongPressed: () {
-            if ( ! _isEditing)
-              enableEditingMode(albumsBloc);
+          onLongPress: () {
+            if (!_isEditing) {
+              _isEditing = true;
+              chooserBloc.clearAlbumsMarkedForDelete();
+            }
           }),
       Container(
         height: 164, // Must be specified or renderer fails
@@ -91,8 +93,10 @@ class _ChooserPageState extends State<ChooserPage> {
                   child: ChooserCardEditing(
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
-                    // isDeleteTicked: isDeleteTicked,
-                    // onDeleteToggle: onDeleteToggle,
+                    isDeleteTicked:
+                        chooserBloc.shouldDeletePuzzle(album.puzzles[index].id),
+                    onDeleteToggle: (newValue) => chooserBloc
+                        .toggleDeletePuzzle(album.puzzles[index].id, newValue),
                     // onEditTap: onEditTap,
                   ),
                 );
@@ -101,20 +105,20 @@ class _ChooserPageState extends State<ChooserPage> {
                   key: Key('$index'),
                   color: Colors.orange[50],
                   child: ChooserCard(
-                    name: album.puzzles[index].name,
-                    thumb: album.puzzles[index].thumb,
-                    // onLongPress: onLongPress,
-                    // onTap: onTap,
-                  ),
+                      name: album.puzzles[index].name,
+                      thumb: album.puzzles[index].thumb,
+                      onLongPress: () {
+                        if (!_isEditing) {
+                          _isEditing = true;
+                          chooserBloc.clearAlbumsMarkedForDelete();
+                        }
+                      }
+                      // onTap: onTap,
+                      ),
                 );
               }
             }),
       ),
     ];
-  }
-
-  void enableEditingMode(ChooserBloc albumsBloc) {
-    _isEditing = true;
-    albumsBloc.clearAlbumsMarkedForDelete();
   }
 }

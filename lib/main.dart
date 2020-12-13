@@ -10,31 +10,29 @@ void main() {
   runApp(Jiggy3());
 }
 
-const ARG_RESET = String.fromEnvironment('applicationReset', defaultValue: 'false');
+const ARG_RESET =
+    String.fromEnvironment('applicationReset', defaultValue: 'false');
 
 class Jiggy3 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = 'Jiggy!';
-    final bool resetApplication = ARG_RESET.toLowerCase() == 'true';
+    final bool applicationResetRequested = ARG_RESET.toLowerCase() == 'true';
 
     return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: title,
-        theme: ThemeData(
-          textTheme: Theme
-              .of(context)
-              .textTheme
-              .apply(
-            bodyColor: Colors.black,
-            displayColor: Colors.grey[600],
-            fontFamily: 'Raleway',
+      debugShowCheckedModeBanner: false,
+      title: title,
+      theme: ThemeData(
+        textTheme: Theme.of(context).textTheme.apply(
+              bodyColor: Colors.black,
+              displayColor: Colors.grey[600],
+              fontFamily: 'Raleway',
             ),
-          // This colors the [InputOutlineBorder] when it is selected
-          primaryColor: Colors.grey[500],
-          textSelectionHandleColor: Colors.green[500],
-          ),
-        // Inject the PuzzleCardsBloc to get the latest data later
+        // This colors the [InputOutlineBorder] when it is selected
+        primaryColor: Colors.grey[500],
+        textSelectionHandleColor: Colors.green[500],
+      ),
+      // Inject the PuzzleCardsBloc to get the latest data later
 
       home: MultiProvider(
         providers: [
@@ -43,19 +41,18 @@ class Jiggy3 extends StatelessWidget {
           BlocProvider(create: (BuildContext context) => ChooserBloc()),
         ],
         // child: MyHomePage(title: 'Jiggy!'),
-        child: ChooserPage(title: 'Jiggy!', applicationResetRequested: resetApplication),
+        child: ChooserPage(
+            title: 'Jiggy!',
+            applicationResetRequested: applicationResetRequested),
       ),
 
       // home: BlocProvider(
-        //   bloc: CounterBloc(),
-        //   child: BlocProvider(
-        //     bloc: PuzzlesBloc(),
-        //       child: MyHomePage(title: 'Jiggy!')),
-        //   )
-
-
-
-        );
+      //   bloc: CounterBloc(),
+      //   child: BlocProvider(
+      //     bloc: PuzzlesBloc(),
+      //       child: MyHomePage(title: 'Jiggy!')),
+      //   )
+    );
   }
 }
 
@@ -74,74 +71,73 @@ class _MyHomePageState extends State<MyHomePage> {
     CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
     // Stream<int> ii = BlocProvider.of<CounterBloc>(context).counterStream;
     return StreamBuilder<int>(
-      stream: BlocProvider.of<CounterBloc>(context).counterStream,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Center(
-            child: Container(
-              height: 180.0,
-              width: 180.0,
-              child: CircularProgressIndicator(),
+        stream: BlocProvider.of<CounterBloc>(context).counterStream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Center(
+              child: Container(
+                height: 180.0,
+                width: 180.0,
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(widget.title),
             ),
-          );
-        }
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(widget.title),
-          ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'You have pushed the button this many times:', textScaleFactor: 3.0,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    'You have pushed the button this many times:',
+                    textScaleFactor: 3.0,
+                  ),
+                  Text(
+                    '${snapshot.data}',
+                    style: Theme.of(context).textTheme.headline4,
+                    textScaleFactor: 3.0,
+                  ),
+                ],
+              ),
+            ),
+            floatingActionButton: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: FloatingActionButton(
+                    heroTag: Key('1'),
+                    onPressed: () => _counterBloc.increment(),
+                    tooltip: 'Increment',
+                    child: Icon(Icons.add),
+                  ),
                 ),
-                Text(
-                  '${snapshot.data}',
-                  style: Theme.of(context).textTheme.headline4,
-                  textScaleFactor: 3.0,
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: FloatingActionButton(
+                    heroTag: Key('2'),
+                    onPressed: () => _counterBloc.decrement(),
+                    tooltip: 'Decrement',
+                    child: Icon(Icons.remove),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+                  child: FloatingActionButton(
+                    heroTag: Key('3'),
+                    onPressed: () async {
+                      await _navigateToSecondPage();
+                    },
+                    tooltip: 'Next Page',
+                    child: Icon(Icons.navigate_next),
+                  ),
                 ),
               ],
             ),
-          ),
-          floatingActionButton: Row(mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: FloatingActionButton(
-                  heroTag: Key('1'),
-                  onPressed: () => _counterBloc.increment(),
-                  tooltip: 'Increment',
-                  child: Icon(Icons.add),
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: FloatingActionButton(
-                  heroTag: Key('2'),
-                  onPressed: () => _counterBloc.decrement(),
-                  tooltip: 'Decrement',
-                  child: Icon(Icons.remove),
-                  ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
-                child: FloatingActionButton(
-                  heroTag: Key('3'),
-                  onPressed: () async {
-                    await _navigateToSecondPage();
-                  },
-                  tooltip: 'Next Page',
-                  child: Icon(Icons.navigate_next),
-                  ),
-                ),
-            ],
-          ),
-        );
-      }
-    );
+          );
+        });
   }
 
   void _navigateToSecondPage() async {
@@ -149,13 +145,13 @@ class _MyHomePageState extends State<MyHomePage> {
     int update = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BlocProvider(
-          create: (BuildContext context) => CounterBloc() ,
+          create: (BuildContext context) => CounterBloc(),
           child: MySecondPage(
             title: 'My Second Page',
-            ),
+          ),
         ),
-        ),
-      );
+      ),
+    );
 
     // Update contains the changed counter value, or null if the counter didn't change.
     if (update != null) {
@@ -163,7 +159,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 }
-
 
 class MySecondPage extends StatefulWidget {
   MySecondPage({Key key, this.title}) : super(key: key);
@@ -176,7 +171,6 @@ class MySecondPage extends StatefulWidget {
 
 class _MySecondPageState extends State<MySecondPage> {
   // CounterBloc _counterBloc;
-
 
   @override
   void initState() {
@@ -196,38 +190,38 @@ class _MySecondPageState extends State<MySecondPage> {
   Widget build(BuildContext context) {
     CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
     return StreamBuilder<int>(
-      stream: BlocProvider.of<CounterBloc>(context).counterStream,
-      builder: (context, snapshot) {
-
-        if ( ! snapshot.hasData) {
-          return Center(
-            child: Container(
-              height: 180.0,
-              width: 180.0,
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-        return WillPopScope(
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text(widget.title),
+        stream: BlocProvider.of<CounterBloc>(context).counterStream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Center(
+              child: Container(
+                height: 180.0,
+                width: 180.0,
+                child: CircularProgressIndicator(),
               ),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Text(
-                      'You have pushed the button this many times:', textScaleFactor: 3.0,
-                      ),
-                    Text(
-                      '${snapshot.data}',
-                      style: Theme.of(context).textTheme.headline4,
-                      textScaleFactor: 3.0,
-                      ),
-                  ],
+            );
+          }
+          return WillPopScope(
+              child: Scaffold(
+                appBar: AppBar(
+                  title: Text(widget.title),
                 ),
-              ),
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        'You have pushed the button this many times:',
+                        textScaleFactor: 3.0,
+                      ),
+                      Text(
+                        '${snapshot.data}',
+                        style: Theme.of(context).textTheme.headline4,
+                        textScaleFactor: 3.0,
+                      ),
+                    ],
+                  ),
+                ),
                 floatingActionButton: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -250,14 +244,12 @@ class _MySecondPageState extends State<MySecondPage> {
                     ),
                   ],
                 ), // This trailing comma makes auto-formatting nicer for build methods.
-            ),
-          onWillPop: () {
-            Navigator.pop(context, snapshot.data);
+              ),
+              onWillPop: () {
+                Navigator.pop(context, snapshot.data);
 
-            return Future.value(false);
-          }
-        );
-      }
-    );
+                return Future.value(false);
+              });
+        });
   }
 }

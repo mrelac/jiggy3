@@ -8,15 +8,15 @@ import 'package:provider/provider.dart';
 class AlbumBuilder extends StatelessWidget {
   final Album album;
 
-  final VoidCallback onLongPressed;
+  final VoidCallback onLongPress;
   final bool isEditing;
 
   const AlbumBuilder(
-      {@required this.album, @required this.isEditing, this.onLongPressed});
+      {@required this.album, @required this.isEditing, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
-    ChooserBloc albumsBloc = Provider.of<ChooserBloc>(context);
+    ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
     return StreamBuilder<List<Album>>(
         stream: BlocProvider.of<ChooserBloc>(context).albumsStream,
         builder: (context, snapshot) {
@@ -30,9 +30,9 @@ class AlbumBuilder extends StatelessWidget {
                       Padding(
                           padding: const EdgeInsets.only(right: 16.0),
                           child: Checkbox(
-                              value: albumsBloc.shouldDeleteAlbum(album.id),
+                              value: chooserBloc.shouldDeleteAlbum(album.id),
                               onChanged: (newValue) {
-                                albumsBloc.toggleDeleteAlbum(album.id, newValue);
+                                chooserBloc.toggleDeleteAlbum(album.id, newValue);
                               })),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -44,12 +44,12 @@ class AlbumBuilder extends StatelessWidget {
                         child: IconButton(
                           iconSize: 40,
                           icon: Icon(Icons.edit),
-                          onPressed: () => albumsBloc.editAlbumName(album),
+                          onPressed: () => chooserBloc.editAlbumName(album),
                         ),
                       )
                   ],
                 ),
-                onLongPress: onLongPressed,
+                onLongPress: onLongPress,
               ),
             ),
           );
