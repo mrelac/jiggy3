@@ -32,6 +32,7 @@ class DBProvider {
   Future<void> deleteJiggyDatabase() async {
     // To delete the database using deleteDatabase, do NOT include the path.
     await deleteDatabase(_dbName);
+    _database = null;
     print('Deleted database $_dbName');
   }
 
