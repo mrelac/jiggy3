@@ -10,9 +10,6 @@ void main() {
   runApp(Jiggy3());
 }
 
-const ARG_RESET =
-    String.fromEnvironment('applicationReset', defaultValue: 'false');
-
 class Jiggy3 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -40,8 +37,7 @@ class Jiggy3 extends StatelessWidget {
         ],
         // child: MyHomePage(title: 'Jiggy!'),
         child: ChooserPage(
-            title: 'Jiggy!',
-            applicationResetRequested: applicationResetRequested),
+            title: 'Jiggy!'),
       ),
 
       // home: BlocProvider(

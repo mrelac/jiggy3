@@ -63,17 +63,10 @@ class DBProvider {
     return albums;
   }
 
-  /// Insert albums and puzzle bindings into the database. Puzzles themselves
-  /// are not inserted, as Repository.createPuzzles() inserts them after
-  /// installing the image files.
-  Future<void> insertAlbums(List<Album> albums) async {
+  Future<void> insertAlbum(Album album) async {
     final db = await database;
     const insert = 'INSERT INTO album (name) VALUES (?)';
-    for (int i = 0; i < albums.length; i++) {
-      int id = await db.rawInsert(insert, [albums[i].name]);
-      albums[i] = Album(id: id, name: albums[i].name, puzzles: albums[i].puzzles);
-      await _insertBindings(albums[i], albums[i].puzzles);
-    }
+    album.id = await db.rawInsert(insert, [album.name]);
   }
 
   /// Deletes albums using albumId. Removes bindings first.
@@ -96,7 +89,7 @@ class DBProvider {
         .toList());
   }
 
-  Future<void> insertPuzzles(List<Puzzle> puzzles) async {
+  Future<void> insertPuzzle(Puzzle puzzle) async {
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle
@@ -105,21 +98,19 @@ INSERT INTO puzzle
    image_opacity, max_pieces)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
-    for (Puzzle puzzle in puzzles) {
-      print('Inserting puzzle ${puzzle.name}');
-      puzzle.id = await db.rawInsert(insert, [
-        puzzle.name,
-        base64Encode(puzzle.thumb),
-        puzzle.imageLocation,
-        puzzle.imageWidth,
-        puzzle.imageHeight,
-        puzzle.imageColour.red,
-        puzzle.imageColour.green,
-        puzzle.imageColour.blue,
-        puzzle.imageOpacity,
-        puzzle.maxPieces
-      ]);
-    };
+    print('Inserting puzzle ${puzzle.name}');
+    puzzle.id = await db.rawInsert(insert, [
+      puzzle.name,
+      base64Encode(puzzle.thumb),
+      puzzle.imageLocation,
+      puzzle.imageWidth,
+      puzzle.imageHeight,
+      puzzle.imageColour.red,
+      puzzle.imageColour.green,
+      puzzle.imageColour.blue,
+      puzzle.imageOpacity,
+      puzzle.maxPieces
+    ]);
   }
 
   /// Deletes puzzles using puzzle id. Removes bindings first.
@@ -149,19 +140,16 @@ SELECT p.* FROM puzzle p
         .toList());
   }
 
-  // PRIVATE METHODS
-
-  /// Bind puzzles to album. Undefined behaviour if binding already exists.
-  Future<void> _insertBindings(Album album, List<Puzzle> puzzles) async {
-    final Batch batch = (await database).batch();
+  /// Bind puzzle to album. Undefined behaviour if binding already exists.
+  Future<void> bindAlbumAndPuzzle(int albumId, int puzzleId) async {
+    final db = await database;
     const String insert =
         'INSERT INTO album_puzzle(album_id, puzzle_id) VALUES(?, ?)';
-    puzzles.forEach((puzzle) {
-      print("Binding puzzle ${puzzle.name} to album ${album.name}");
-      batch.rawInsert(insert, [album.id, puzzle.id]);
-    });
-    await batch.commit(noResult: true);
+    await db.rawInsert(insert, [albumId, puzzleId]);
+      print('Bound puzzleId $puzzleId to albumId $albumId');
   }
+
+  // PRIVATE METHODS
 
   /// Deletes album_puzzle bindings for specified albums.
   Future<void> _deleteBindingsByAlbum(List<Album> albums) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,30 +11,44 @@ import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/chooser_card.dart';
 import 'package:provider/provider.dart';
 
+const ARG_RESET =
+    String.fromEnvironment('applicationReset', defaultValue: 'false');
+
 /// The ChooserPage is where puzzles can be browsed and selected to play.
 /// It is a StatefulWidget solely to take advantage of initState(), which
 ///   is executed only once.
 class ChooserPage extends StatefulWidget {
   final String title;
-  final bool applicationResetRequested;
 
-  ChooserPage(
-      {Key key, @required this.title, this.applicationResetRequested: false});
+  ChooserPage({Key key, @required this.title});
 
   _ChooserPageState createState() => _ChooserPageState();
 }
 
 class _ChooserPageState extends State<ChooserPage> {
-  bool _isEditing;
+  AppBar _appBar;
+  AppBar _appBarStandard;
+  AppBar _appBarEdit;
 
   @override
   void initState() {
     super.initState();
-    if (widget.applicationResetRequested) {
+
+    final bool applicationResetRequested = ARG_RESET.toLowerCase() == 'true';
+    if (applicationResetRequested) {
       BlocProvider.of<ChooserBloc>(context).applicationReset();
     }
+    _appBarEdit = _buildAppBarEditActions();
+    _appBarStandard = _buildAppBarStandardActions();
+    _appBar = _appBarStandard;
+    BlocProvider.of<ChooserBloc>(context).setEditMode(false);
+    BlocProvider.of<ChooserBloc>(context).editModeStream.listen(
+            (isInEditMode) => setState(
+                () => _appBar = isInEditMode ? _appBarEdit : _appBarStandard));
+  }
 
-    this._isEditing = false;
+  bool get isInEditMode {
+    return BlocProvider.of<ChooserBloc>(context).isInEditMode;
   }
 
   @override
@@ -42,9 +57,7 @@ class _ChooserPageState extends State<ChooserPage> {
     SystemChrome.setEnabledSystemUIOverlays([]); // Hide status bars and such
 
     return Scaffold(
-      appBar: _isEditing
-          ? _buildAppBarEditActions()
-          : _buildAppBarStandardActions(),
+      appBar: _appBar,
       body: Material(
         child: StreamBuilder<List<Album>>(
             stream: chooserBloc.albumsStream,
@@ -61,7 +74,7 @@ class _ChooserPageState extends State<ChooserPage> {
                   ],
                 ));
               }
-              return BusyIndicator();
+              return BusyIndicator(chooserBloc.progress);
             }),
       ),
     );
@@ -81,11 +94,11 @@ class _ChooserPageState extends State<ChooserPage> {
     ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
     return [
       AlbumBuilder(
-          isEditing: _isEditing,
+          isEditing: isInEditMode,
           album: album,
           onLongPress: () {
-            if (!_isEditing) {
-              _isEditing = !_isEditing;
+            if (!isInEditMode) {
+              chooserBloc.setEditMode(true);
               chooserBloc.clearItemsMarkedForDelete();
             }
           }),
@@ -95,7 +108,7 @@ class _ChooserPageState extends State<ChooserPage> {
             scrollDirection: Axis.horizontal,
             itemCount: album.puzzles.length,
             itemBuilder: (BuildContext context, int index) {
-              if (_isEditing) {
+              if (isInEditMode) {
                 return Container(
                   key: Key('$index'),
                   color: Colors.orange[50],
@@ -117,8 +130,8 @@ class _ChooserPageState extends State<ChooserPage> {
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
                     onLongPress: () {
-                      if (!_isEditing) {
-                        _isEditing = !_isEditing;
+                      if (!isInEditMode) {
+                        chooserBloc.setEditMode(true);
                         chooserBloc.clearItemsMarkedForDelete();
                       }
                     },
@@ -137,10 +150,11 @@ class _ChooserPageState extends State<ChooserPage> {
       leading: IconButton(
         iconSize: 40.0,
         icon: Icon(Icons.cancel),
-        // onPressed: () => _onEditingCanceled(),
+        onPressed: () =>
+            BlocProvider.of<ChooserBloc>(context).setEditMode(false),
       ),
       backgroundColor: Colors.green[100],
-      actions: AppBarActions.buildAppBaEditActions(),
+      actions: AppBarActions.buildAppBaEditActions(BlocProvider.of<ChooserBloc>(context)),
     );
   }
 
@@ -150,7 +164,7 @@ class _ChooserPageState extends State<ChooserPage> {
       title: Text("Jiggy!"),
       backgroundColor: Colors.amber[100],
       elevation: 0.0,
-      actions: AppBarActions.buildAppBarStandardActions(),
+      actions: AppBarActions.buildAppBarStandardActions(BlocProvider.of<ChooserBloc>(context)),
     );
   }
 }

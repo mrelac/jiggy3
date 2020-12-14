@@ -30,25 +30,10 @@ class Repository {
       ..addAll(await DBProvider.db.getAlbums());
   }
 
-  /// Create albums. Non-selectable albums are filtered out. The only fields in
-  /// each Puzzle that are used are name and imageLocation, starting
-  /// with e.g.:
-  ///  - ASSET IMAGE PATH: an imageLocation file path starting with 'assets'
-  ///  - FILE IMAGE PATH: an imageLocation file path starting with '/'
-  ///  - NETWORK IMAGE PATH: an imageLocation network path starting with 'http'
-  ///
-  /// Steps:
-  ///  - For each album:
-  ///    - Create puzzles
-  ///    - Add puzzles to database
-  ///  - Insert album and its puzzle bindings into the database
-  static Future<void> createAlbums(List<Album> albums) async {
-    for (Album album in albums) {
-      if (album.isSelectable) {
-        await createPuzzles(album.puzzles);
-      }
+  static Future<void> createAlbum(Album album) async {
+    if (album.isSelectable) {
+      await DBProvider.db.insertAlbum(album);
     }
-    await DBProvider.db.insertAlbums(albums);
   }
 
   /// Delete albums from database.  Removes bindings first.
@@ -64,25 +49,11 @@ class Repository {
     return (await DBProvider.db.getPuzzles());
   }
 
-  /// Create puzzles. The only fields in each Puzzle that are used are
-  /// name and imageLocation, starting with e.g.:
-  ///  - ASSET IMAGE PATH: an imageLocation file path starting with 'assets'
-  ///  - FILE IMAGE PATH: an imageLocation file path starting with '/'
-  ///  - NETWORK IMAGE PATH: an imageLocation network path starting with 'http'
-  ///
-  /// Steps:
-  ///  - For each puzzle:
-  ///    - Create source image file path from imageLocation
-  ///    - Create target image file path from puzzle name
-  ///    - Copy image file from source to target
-  ///    - Update puzzle fields (thumb, imageLocation, imageWidth, imageHeight)
-  ///  - Add puzzles to database.
-  static Future<void> createPuzzles(List<Puzzle> puzzles) async {
-    for (Puzzle puzzle in puzzles) {
+  static Future<void> createPuzzle(Puzzle puzzle) async {
       Uint8List sourceBytes =
-          await ChooserService.readImageBytesFromLocation(puzzle.imageLocation);
+      await ChooserService.readImageBytesFromLocation(puzzle.imageLocation);
       String targetLocation =
-          await JiggyFilesystem.createTargetImagePath(puzzle.name);
+      await JiggyFilesystem.createTargetImagePath(puzzle.name);
       Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
       await JiggyFilesystem.imageBytesSave(sourceBytes, File(targetLocation));
       puzzle
@@ -90,8 +61,7 @@ class Repository {
         ..imageLocation = targetLocation
         ..imageWidth = size.width
         ..imageHeight = size.height;
-    };
-    await DBProvider.db.insertPuzzles(puzzles);
+    await DBProvider.db.insertPuzzle(puzzle);
   }
 
   /// Delete puzzle images from device storage and delete puzzles and bindings
@@ -103,18 +73,21 @@ class Repository {
   }
 
   /// Reset the application: drop and create database and image storage file
-  /// directories and load seed albums from assets.
-  static Future<void> applicationReset() async {
+  /// directories and return a list of asset albums with puzzles.
+  static Future<List<Album>> applicationResetEnvironment() async {
     await DBProvider.db.deleteJiggyDatabase();
     await JiggyFilesystem.appImagesDirectoryDelete();
     await JiggyFilesystem.appImagesDirectoryCreate();
-
     String jsonStr = await rootBundle.loadString(ASSETS_PATH);
     List<dynamic> jsonData = jsonDecode(jsonStr);
     final albums = <Album>[];
     jsonData
         .forEach((jsonAlbum) => albums.add(Album.fromMap(jsonAlbum['album'])));
-    await createAlbums(albums);
+    return albums;
+  }
+
+  static Future<void> bindAlbumAndPuzzle(int albumId, int puzzleId) async {
+    await DBProvider.db.bindAlbumAndPuzzle(albumId, puzzleId);
   }
 
   // PRIVATE METHODS

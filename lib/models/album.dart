@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:jiggy3/models/puzzle.dart';
 
 // Latest thoughts (30-Nov-2020):
@@ -8,14 +7,13 @@ import 'package:jiggy3/models/puzzle.dart';
 // ALTERNATIVE: Make Album a ChooserAlbum with those event properties.
 
 /// Keeps track of an album
-@immutable
 class Album {
-  final int id;
-  final String name;
-  final List<Puzzle> puzzles;
-  final bool isSelectable; // true if album can be modified/deleted
+  int id;
+  String name;
+  List<Puzzle> puzzles;
+  bool isSelectable; // true if album can be modified/deleted
 
-  const Album({
+  Album({
     this.id,
     this.name,
     this.puzzles,
@@ -29,16 +27,6 @@ class Album {
         this.puzzles = jsonMap['puzzles'] == null
             ? <Puzzle>[]
             : jsonMap['puzzles'].map<Puzzle>((s) => Puzzle.fromMap(s)).toList(),
-        this.isSelectable = true;
-
-  @deprecated
-  Album.fromMap2(Map albumJson, List<Puzzle> puzzles)
-      : assert(albumJson['id'] != null),
-        assert(albumJson['name'] != null),
-        assert(puzzles != null),
-        this.id = albumJson['id'],
-        this.name = albumJson['name'],
-        this.puzzles = albumJson[puzzles] ?? <Puzzle>[],
         this.isSelectable = true;
 
   @override

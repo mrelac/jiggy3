@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:jiggy3/blocs/chooser_bloc.dart';
+import 'package:provider/provider.dart';
 
 class AppBarActions {
 
-  static List<Widget> buildAppBaEditActions() {
+  static List<Widget> buildAppBaEditActions(ChooserBloc chooserBloc) {
     return <Widget>[
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -12,10 +14,8 @@ class AppBarActions {
           child: IconButton(
               iconSize: 40,
               icon: Icon(Icons.category),
-              onPressed: () {
-                print('DUMP');
-                // _dumpTables();
-              }),
+              onPressed: () async => await chooserBloc.dumpTables(),
+          ),
         ),
       ),
       Padding(
@@ -62,15 +62,14 @@ class AppBarActions {
           child: IconButton(
               iconSize: 40,
               icon: Icon(Icons.refresh),
-              onPressed: () async {
-                // await _resetApp();
-              }),
+              onPressed: () async => await chooserBloc.applicationReset(),
+          ),
         ),
       ),
     ];
   }
 
-  static List<Widget> buildAppBarStandardActions() {
+  static List<Widget> buildAppBarStandardActions(ChooserBloc chooserBloc) {
     return <Widget>[
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -79,7 +78,7 @@ class AppBarActions {
           child: IconButton(
             iconSize: 40,
             icon: Icon(Icons.category),
-            // onPressed: () => _dumpTables(),
+            onPressed: () async => await chooserBloc.dumpTables(),
           ),
         ),
       ),

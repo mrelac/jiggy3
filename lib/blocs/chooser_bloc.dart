@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jiggy3/data/database.dart';
 import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
@@ -9,8 +11,9 @@ import 'package:jiggy3/models/puzzle.dart';
 import 'bloc_provider.dart';
 
 class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
-
   static bool _applicationResetting = false;
+  static bool _isInEditMode = false;
+  Progress progress = Progress('Not reloading', 0.0);
 
   // An entry in the list means object is marked for delete.
   final _albumsMarkedForDelete = Set();
@@ -24,10 +27,19 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
   }
 
   final _albumsStream = StreamController<List<Album>>.broadcast();
+
   Stream<List<Album>> get albumsStream => _albumsStream.stream;
 
   final _editModeStream = StreamController<bool>.broadcast();
+
   Stream<bool> get editModeStream => _editModeStream.stream;
+
+  void setEditMode(bool value) {
+    _isInEditMode = value;
+    _editModeStream.sink.add(value);
+  }
+
+  bool get isInEditMode => _isInEditMode;
 
   void getAlbums() async {
     List<Album> albums = await Repository.getAlbums();
@@ -46,32 +58,11 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
     return _applicationResetting;
   }
 
-  /// Create albums. Non-selectable albums are filtered out. The only fields in
-  /// each Puzzle that are used are name and imageLocation, starting
-  /// with e.g.:
-  ///  - ASSET IMAGE PATH: an imageLocation file path starting with 'assets'
-  ///  - FILE IMAGE PATH: an imageLocation file path starting with '/'
-  ///  - NETWORK IMAGE PATH: an imageLocation network path starting with 'http'
-  void createAlbums(List<Album> albums) async {
-    await Repository.createAlbums(albums);
-    _albumsStream.sink.add(albums);
-  }
-
   /// Delete albums from database.  Removes bindings first.
   /// Album puzzles are NOT deleted.
   void deleteAlbums(List<Album> albums) async {
     await Repository.deleteAlbums(albums);
     _albumsStream.sink.add(albums);
-  }
-
-  /// Create puzzles. The only fields in each Puzzle that are used are
-  /// name and imageLocation, starting with e.g.:
-  ///  - ASSET IMAGE PATH: an imageLocation file path starting with 'assets'
-  ///  - FILE IMAGE PATH: an imageLocation file path starting with '/'
-  ///  - NETWORK IMAGE PATH: an imageLocation network path starting with 'http'
-  void createPuzzles(List<Puzzle> puzzles) async {
-    await Repository.createPuzzles(puzzles);
-    getAlbums();
   }
 
   /// Delete puzzle images from device storage and delete puzzles and bindings
@@ -83,11 +74,29 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
 
   /// Reset the application: drop and create database and image storage file
   /// directories and load seed albums from assets.
-  void applicationReset() async {
+  Future<void> applicationReset() async {
     _applicationResetting = true;
-    await Repository.applicationReset();
-    getAlbums();
+    progress = Progress('Resetting application environment', 0.0);
+    List<Album> albums = await Repository.applicationResetEnvironment();
+    int puzzleCount = 0;
+    albums.forEach((a) => puzzleCount += (a?.puzzles?.length) ?? 0);
+    int currentPuzzleIndex = 0;
+    for (Album album in albums) {
+      await Repository.createAlbum(album);
+      for (Puzzle puzzle in album.puzzles) {
+        progress = Progress(
+            'Creating puzzle "${puzzle.name}" in album "${album.name}"',
+            currentPuzzleIndex / puzzleCount);
+        await Repository.createPuzzle(puzzle);
+        await Repository.bindAlbumAndPuzzle(album.id, puzzle.id);
+        _albumsStream.sink.add([album]);
+        currentPuzzleIndex++;
+      }
+      List<Album> a = await Repository.getAlbums();
+    }
+
     _applicationResetting = false;
+    getAlbums();
   }
 
 // TODO - Implement
@@ -129,7 +138,7 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
       {@required Puzzle puzzle, @required Album album}) async {}
 
 // TODO - Implement
-  /// Undbind the puzzle and the album.
+  /// Unbind the puzzle and the album.
   void removePuzzleFromAlbum(
       {@required Puzzle puzzle, @required Album album}) async {}
 
@@ -167,10 +176,29 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
     getAlbums();
   }
 
+  Future<void> dumpTables() async {
+    await DBProvider.db.dumpTable('album');
+    await DBProvider.db.dumpTable('puzzle');
+    await DBProvider.db.dumpTable('album_puzzle');
+    await DBProvider.db.dumpTable('puzzle_piece');
+  }
+
   // All stream controllers you create should be closed within this function
   @override
   void dispose() {
     _albumsStream.close();
     _editModeStream.close();
+  }
+}
+
+class Progress {
+  final String progress;
+  final double percent;
+
+  const Progress(this.progress, this.percent);
+
+  @override
+  String toString() {
+    return 'Progress{progress: $progress, percent: $percent}';
   }
 }
