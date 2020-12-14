@@ -118,7 +118,7 @@ class _ChooserPageState extends State<ChooserPage> {
                     isDeleteTicked:
                         chooserBloc.shouldDeletePuzzle(album.puzzles[index].id),
                     onDeleteToggle: (newValue) => chooserBloc
-                        .toggleDeletePuzzle(album.puzzles[index].id, newValue),
+                        .toggleDeletePuzzle(album.puzzles[index], newValue),
                     // onEditTap: onEditTap,
                   ),
                 );

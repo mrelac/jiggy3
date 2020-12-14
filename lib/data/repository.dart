@@ -18,6 +18,8 @@ const ASSETS_PATH = 'assets/puzzles.json';
 const THUMB_WIDTH = 240.0;
 
 class Repository {
+  static const ALBUM_ALL = 'All';
+  static const ALBUM_SAVED = 'Saved';
   // ALBUMS
 
   /// Returns all albums and their puzzles. The returned list of albums will
@@ -95,7 +97,7 @@ class Repository {
   /// Returns a single album named 'all' containing all unique puzzles
   static Future<Album> _getAlbumAll() async {
     final List<Puzzle> puzzles = await DBProvider.db.getPuzzles();
-    return Album(isSelectable: false, name: 'All', puzzles: puzzles);
+    return Album(isSelectable: false, name: ALBUM_ALL, puzzles: puzzles);
   }
 
   // Returns a single album named 'Saved' containing all puzzles in progress
@@ -106,6 +108,6 @@ class Repository {
     // FIXME Add logic to return Saved puzzles
     // FIXME Add logic to return Saved puzzles
     // FIXME Add logic to return Saved puzzles
-    return Album(isSelectable: false, name: 'Saved', puzzles: []);
+    return Album(isSelectable: false, name: ALBUM_SAVED, puzzles: []);
   }
 }

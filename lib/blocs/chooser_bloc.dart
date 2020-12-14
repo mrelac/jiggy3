@@ -13,11 +13,12 @@ import 'bloc_provider.dart';
 class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
   static bool _applicationResetting = false;
   static bool _isInEditMode = false;
-  Progress progress = Progress('Not reloading', 0.0);
+  Progress progress;
+  List<Album> _albumCache;
 
   // An entry in the list means object is marked for delete.
-  final _albumsMarkedForDelete = Set();
-  final _puzzlesMarkedForDelete = Set();
+  final _albumsMarkedForDelete = Set<int>();
+  final _puzzlesMarkedForDelete = Set<int>();
 
   final _albumNames = Set();
   final _puzzleNames = Set();
@@ -42,16 +43,18 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
   bool get isInEditMode => _isInEditMode;
 
   void getAlbums() async {
-    List<Album> albums = await Repository.getAlbums();
+    _albumCache = await Repository.getAlbums();
     _albumNames
       ..clear()
-      ..add((await Repository.getAlbums()).map<String>((album) => album.name));
+      ..add((_albumCache).map<String>((album) => album.name));
 
     _puzzleNames
       ..clear()
-      ..add(
-          (await Repository.getPuzzles()).map<String>((puzzle) => puzzle.name));
-    _albumsStream.sink.add(albums);
+      ..add((_albumCache
+              .firstWhere((album) => album.name == Repository.ALBUM_ALL)
+              .puzzles)
+          .map<String>((puzzle) => puzzle.name));
+    _albumsStream.sink.add(_albumCache);
   }
 
   bool isApplicationResetting() {
@@ -92,7 +95,6 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
         _albumsStream.sink.add([album]);
         currentPuzzleIndex++;
       }
-      List<Album> a = await Repository.getAlbums();
     }
 
     _applicationResetting = false;
@@ -147,33 +149,32 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
   void clearItemsMarkedForDelete() {
     _albumsMarkedForDelete.clear();
     _puzzlesMarkedForDelete.clear();
-    getAlbums();
   }
 
   bool shouldDeleteAlbum(int id) {
     return _albumsMarkedForDelete.contains(id);
   }
 
-  void toggleDeleteAlbum(int id, bool shouldDelete) {
+  void toggleDeleteAlbum(Album album, bool shouldDelete) {
     shouldDelete
-        ? _albumsMarkedForDelete.add(id)
-        : _albumsMarkedForDelete.remove(id);
+        ? _albumsMarkedForDelete.add(album.id)
+        : _albumsMarkedForDelete.remove(album.id);
 
-    print('shouldDeleteAlbum id $id: new Value: $shouldDelete');
-    getAlbums();
+    print('toggleDeleteAlbum "${album.name}": new Value: $shouldDelete');
+    _albumsStream.sink.add(_albumCache);
   }
 
   bool shouldDeletePuzzle(int id) {
     return _puzzlesMarkedForDelete.contains(id);
   }
 
-  void toggleDeletePuzzle(int id, bool shouldDelete) {
+  void toggleDeletePuzzle(Puzzle puzzle, bool shouldDelete) {
     shouldDelete
-        ? _puzzlesMarkedForDelete.add(id)
-        : _puzzlesMarkedForDelete.remove(id);
+        ? _puzzlesMarkedForDelete.add(puzzle.id)
+        : _puzzlesMarkedForDelete.remove(puzzle.id);
 
-    print('shouldDeletePuzzle id $id: new value: $shouldDelete');
-    getAlbums();
+    print('toggleDeletePuzzle "${puzzle.name}": new value: $shouldDelete');
+    _albumsStream.sink.add(_albumCache);
   }
 
   Future<void> dumpTables() async {

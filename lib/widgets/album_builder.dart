@@ -32,7 +32,7 @@ class AlbumBuilder extends StatelessWidget {
                           child: Checkbox(
                               value: chooserBloc.shouldDeleteAlbum(album.id),
                               onChanged: (newValue) {
-                                chooserBloc.toggleDeleteAlbum(album.id, newValue);
+                                chooserBloc.toggleDeleteAlbum(album, newValue);
                               })),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
