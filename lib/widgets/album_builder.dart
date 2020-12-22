@@ -30,7 +30,8 @@ class AlbumBuilder extends StatelessWidget {
                       Padding(
                           padding: const EdgeInsets.only(right: 16.0),
                           child: Checkbox(
-                              value: chooserBloc.shouldDeleteAlbum(album.id),
+                              value:
+                                  chooserBloc.isAlbumMarkedForDelete(album.id),
                               onChanged: (newValue) {
                                 chooserBloc.toggleDeleteAlbum(album, newValue);
                               })),
@@ -44,7 +45,8 @@ class AlbumBuilder extends StatelessWidget {
                         child: IconButton(
                           iconSize: 40,
                           icon: Icon(Icons.edit),
-                          onPressed: () => chooserBloc.editAlbumName(album),
+                          // FIXME FIXME FIXME
+                          // onPressed: () => chooserBloc.editingNameCountIncrement(),
                         ),
                       )
                   ],

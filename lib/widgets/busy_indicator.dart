@@ -5,7 +5,7 @@ import 'package:jiggy3/blocs/chooser_bloc.dart';
 class BusyIndicator extends StatelessWidget {
   final Progress progress;
 
-  const BusyIndicator(this.progress);
+  const BusyIndicator([this.progress]);
 
   @override
   Widget build(BuildContext context) {

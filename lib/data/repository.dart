@@ -20,28 +20,38 @@ const THUMB_WIDTH = 240.0;
 class Repository {
   static const ALBUM_ALL = 'All';
   static const ALBUM_SAVED = 'Saved';
+
   // ALBUMS
+
+  static Future<Album> getAlbumById(int albumId) async {
+    return await DBProvider.db.getAlbumById(albumId);
+  }
+
+  static Future<Album> getAlbumByPuzzleId(int puzzleId) async {
+    return await DBProvider.db.getAlbumByPuzzleId(puzzleId);
+  }
 
   /// Returns all albums and their puzzles. The returned list of albums will
   /// never be empty, as the non-editable albums 'All' and 'Saved' are always
   /// returned, even if there are no puzzles.
   static Future<List<Album>> getAlbums() async {
     return <Album>[]
-      ..add(await _getAlbumSaved())
-      ..add(await _getAlbumAll())
+      ..add(await getAlbumSaved())
+      ..add(await getAlbumAll())
       ..addAll(await DBProvider.db.getAlbums());
   }
 
+  /// Insert album into the database.
   static Future<void> createAlbum(Album album) async {
     if (album.isSelectable) {
       await DBProvider.db.insertAlbum(album);
     }
   }
 
-  /// Delete albums from database.  Removes bindings first.
+  /// Delete album from database.  Removes bindings first.
   /// Album puzzles are NOT deleted.
-  static Future<void> deleteAlbums(List<Album> albums) async {
-    await DBProvider.db.deleteAlbums(albums);
+  static Future<void> deleteAlbum(int albumId) async {
+    await DBProvider.db.deleteAlbum(albumId);
   }
 
   // PUZZLES
@@ -51,27 +61,46 @@ class Repository {
     return (await DBProvider.db.getPuzzles());
   }
 
-  static Future<void> createPuzzle(Puzzle puzzle) async {
-      Uint8List sourceBytes =
-      await ChooserService.readImageBytesFromLocation(puzzle.imageLocation);
-      String targetLocation =
-      await JiggyFilesystem.createTargetImagePath(puzzle.name);
-      Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
-      await JiggyFilesystem.imageBytesSave(sourceBytes, File(targetLocation));
-      puzzle
-        ..thumb = ImageService.resizeBytes(sourceBytes, THUMB_WIDTH)
-        ..imageLocation = targetLocation
-        ..imageWidth = size.width
-        ..imageHeight = size.height;
+  /// Create new puzzle from puzzle.name and puzzle.imageLocation, copy image
+  /// to device storage, fill out remainder of Puzzle fields, and add puzzle to
+  /// database.
+  static Future<Puzzle> createPuzzle(Puzzle puzzle) async {
+    Uint8List sourceBytes =
+        await ChooserService.readImageBytesFromLocation(puzzle.imageLocation);
+    String targetLocation =
+        await JiggyFilesystem.createTargetImagePath(puzzle.name);
+    Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
+    await JiggyFilesystem.imageBytesSave(sourceBytes, File(targetLocation));
+    puzzle
+      ..thumb = ImageService.resizeBytes(sourceBytes, THUMB_WIDTH)
+      ..imageLocation = targetLocation
+      ..imageWidth = size.width
+      ..imageHeight = size.height;
     await DBProvider.db.insertPuzzle(puzzle);
+    return puzzle;
   }
 
-  /// Delete puzzle images from device storage and delete puzzles and bindings
+  /// Delete puzzle image from device storage and delete puzzle and binding,
+  /// if any, from database.
   /// from database.
-  static Future<void> deletePuzzles(List<Puzzle> puzzles) async {
-    puzzles.forEach((puzzle) async =>
-        await JiggyFilesystem.imageFileDelete(File(puzzle.imageLocation)));
-    await DBProvider.db.deletePuzzles(puzzles);
+  static Future<void> deletePuzzle(int puzzleId) async {
+    Puzzle puzzle = await DBProvider.db.getPuzzleById(puzzleId);
+    if (puzzle != null) {
+      await JiggyFilesystem.imageFileDelete(File(puzzle.imageLocation));
+    }
+    await DBProvider.db.deletePuzzle(puzzleId);
+  }
+
+  static Future<Puzzle> getPuzzleById(int puzzleId) async {
+    return await DBProvider.db.getPuzzleById(puzzleId);
+  }
+
+  static Future<List<Puzzle>> getPuzzlesByAlbumId(int albumId) async {
+    return await DBProvider.db.getPuzzlesByAlbumId(albumId);
+  }
+
+  static Future<void> updatePuzzleName(String oldName, String newName) async {
+    await DBProvider.db.updatePuzzleName(oldName, newName);
   }
 
   /// Reset the application: drop and create database and image storage file
@@ -92,22 +121,16 @@ class Repository {
     await DBProvider.db.bindAlbumAndPuzzle(albumId, puzzleId);
   }
 
-  // PRIVATE METHODS
-
   /// Returns a single album named 'all' containing all unique puzzles
-  static Future<Album> _getAlbumAll() async {
+  static Future<Album> getAlbumAll() async {
     final List<Puzzle> puzzles = await DBProvider.db.getPuzzles();
     return Album(isSelectable: false, name: ALBUM_ALL, puzzles: puzzles);
   }
 
   // Returns a single album named 'Saved' containing all puzzles in progress
-  static Future<Album> _getAlbumSaved() async {
+  static Future<Album> getAlbumSaved() async {
     // throw Exception('Not implemented yet');
-    // FIXME Add logic to return Saved puzzles
-    // FIXME Add logic to return Saved puzzles
-    // FIXME Add logic to return Saved puzzles
-    // FIXME Add logic to return Saved puzzles
-    // FIXME Add logic to return Saved puzzles
+    // TODO - getAlbumSaved()
     return Album(isSelectable: false, name: ALBUM_SAVED, puzzles: []);
   }
 }

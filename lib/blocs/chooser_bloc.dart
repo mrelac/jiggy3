@@ -8,20 +8,23 @@ import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
 
-import 'bloc_provider.dart';
-
-class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
+class ChooserBloc extends Cubit<List<Album>> {
   static bool _applicationResetting = false;
   static bool _isInEditMode = false;
   Progress progress;
   List<Album> _albumCache;
 
-  // An entry in the list means object is marked for delete.
+  // An entry in the list means object is marked for delete/being edited
   final _albumsMarkedForDelete = Set<int>();
   final _puzzlesMarkedForDelete = Set<int>();
 
-  final _albumNames = Set();
-  final _puzzleNames = Set();
+  final _albumNames = Set<String>();
+
+  List<String> getAlbumNames() => _albumNames.map((name) => name).toList();
+
+  final _puzzleNames = Set<String>();
+
+  List<String> getPuzzleNames() => _puzzleNames.map((name) => name).toList();
 
   ChooserBloc() : super(<Album>[]) {
     getAlbums();
@@ -35,22 +38,29 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
 
   Stream<bool> get editModeStream => _editModeStream.stream;
 
+  final _editingNameStream = StreamController<Key>.broadcast();
+
+  Stream<Key> get editingNameStream => _editingNameStream.stream;
+
   void setEditMode(bool value) {
     _isInEditMode = value;
+    _albumsMarkedForDelete.clear();
+    _puzzlesMarkedForDelete.clear();
     _editModeStream.sink.add(value);
+    _editingNameStream.sink.add(null);
   }
 
   bool get isInEditMode => _isInEditMode;
 
-  void getAlbums() async {
+  Future<void> getAlbums() async {
     _albumCache = await Repository.getAlbums();
     _albumNames
       ..clear()
-      ..add((_albumCache).map<String>((album) => album.name));
+      ..addAll((_albumCache).map<String>((album) => album.name));
 
     _puzzleNames
       ..clear()
-      ..add((_albumCache
+      ..addAll((_albumCache
               .firstWhere((album) => album.name == Repository.ALBUM_ALL)
               .puzzles)
           .map<String>((puzzle) => puzzle.name));
@@ -61,17 +71,29 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
     return _applicationResetting;
   }
 
-  /// Delete albums from database.  Removes bindings first.
-  /// Album puzzles are NOT deleted.
-  void deleteAlbums(List<Album> albums) async {
-    await Repository.deleteAlbums(albums);
-    _albumsStream.sink.add(albums);
+  Future<void> deleteSelectedItems() async {
+    int itemCount =
+        _puzzlesMarkedForDelete.length + _albumsMarkedForDelete.length;
+    int currentIndex = 0;
+    for (int albumId in _albumsMarkedForDelete) {
+      currentIndex++;
+      Album album = await Repository.getAlbumById(albumId);
+      progress =
+          Progress('Deleting album "${album.name}"', currentIndex / itemCount);
+      await Repository.deleteAlbum(albumId);
+    }
+
+    for (int puzzleId in _puzzlesMarkedForDelete) {
+      currentIndex++;
+      Puzzle puzzle = await Repository.getPuzzleById(puzzleId);
+      progress = Progress(
+          'Deleting puzzle "${puzzle.name}"', currentIndex / itemCount);
+      await Repository.deletePuzzle(puzzleId);
+    }
   }
 
-  /// Delete puzzle images from device storage and delete puzzles and bindings
-  /// from database.
-  void deletePuzzles(List<Puzzle> puzzles) async {
-    await Repository.deletePuzzles(puzzles);
+  Future<void> updatePuzzleName(String oldName, String newName) async {
+    await Repository.updatePuzzleName(oldName, newName);
     getAlbums();
   }
 
@@ -101,57 +123,42 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
     getAlbums();
   }
 
-// TODO - Implement
   /// Create new, empty Album from name, add to database, and refresh album list.
   void createAlbum(String name) async {
-    _albumsStream.sink.add([Album(name: name)]);
+    Album newAlbum = Album(name: name);
+    await Repository.createAlbum(newAlbum);
+    _albumCache.add(newAlbum);
+    _albumsStream.sink.add([newAlbum]);
   }
 
-// TODO - Implement
-  /// Remove puzzle bindings, delete the album from the database, and
-  /// refresh the album list.
-  void deleteAlbum(int albumId) async {
-    // await Repository.deleteAlbum(albumId);
+  /// Create new puzzle from puzzle.name and puzzle.imageLocation, copy image
+  /// to device storage, fill out remainder of Puzzle fields, and add puzzle to
+  /// database.
+  void createPuzzle(String name, String imageLocation) async {
+    Puzzle newPuzzle = await Repository.createPuzzle(
+        Puzzle(name: name, imageLocation: imageLocation));
+    Album all = await Repository.getAlbumAll();
+    all.puzzles.insert(0, newPuzzle);
+    _albumsStream.sink.add([all]);
   }
 
-// TODO - Implement
-  void editAlbumName(Album album) {
-    print('AlbumsBloc: editing album name for album ${album.name}');
-  }
-
-// TODO - Implement
-  /// Create new puzzle from name and imageLocation, copy image to device
-  /// storage, add puzzle to database, and refresh the album list.
-  void createPuzzle(String name, String imageLocation) async {}
-
-// TODO - Implement
-  /// Remove puzzle binding, delete the puzzle image from device storage,
-  /// delete the puzzle from the database, and refresh the album list.
-  void deletePuzzle(int puzzleId) async {}
-
-// TODO - Implement
-  void editPuzzleName(Puzzle puzzle) {
-    print('AlbumsBloc: editing puzzle name for puzzle ${puzzle.name}');
-  }
-
-// TODO - Implement
+// TODO - addPuzzleToAlbum()
   /// Bind the puzzle to the album.
   void addPuzzleToAlbum(
       {@required Puzzle puzzle, @required Album album}) async {}
 
-// TODO - Implement
+// TODO - removePuzzleFromAlbum()
   /// Unbind the puzzle and the album.
   void removePuzzleFromAlbum(
       {@required Puzzle puzzle, @required Album album}) async {}
 
   // STATE MANAGEMENT: EDITING METHODS
 
-  void clearItemsMarkedForDelete() {
-    _albumsMarkedForDelete.clear();
-    _puzzlesMarkedForDelete.clear();
+  int countItemsMarkedForDelete() {
+    return _albumsMarkedForDelete.length + _puzzlesMarkedForDelete.length;
   }
 
-  bool shouldDeleteAlbum(int id) {
+  bool isAlbumMarkedForDelete(int id) {
     return _albumsMarkedForDelete.contains(id);
   }
 
@@ -164,7 +171,7 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
     _albumsStream.sink.add(_albumCache);
   }
 
-  bool shouldDeletePuzzle(int id) {
+  bool isPuzzleMarkedForDelete(int id) {
     return _puzzlesMarkedForDelete.contains(id);
   }
 
@@ -184,11 +191,30 @@ class ChooserBloc extends Cubit<List<Album>> implements BlocBase {
     await DBProvider.db.dumpTable('puzzle_piece');
   }
 
-  // All stream controllers you create should be closed within this function
-  @override
   void dispose() {
     _albumsStream.close();
     _editModeStream.close();
+    _editingNameStream.close();
+    print('ChooserBloc: DISPOSING!!!');
+  }
+
+  /// Adds the key to the editingNameStream sink, to which all interested
+  /// parties (e.g. Albums, ChooserCards, etc) have subscribed. A null key
+  /// indicates the caller is unsubscribing and nobody is editing.
+  /// If a non-null request is made while another editing request is in
+  /// progress, an exception is thrown.
+  Key _editingNameKey;
+
+  Key get editingNameKey => _editingNameKey;
+
+  void editingNameRequest(Key key) async {
+    if ((key != null) && (_editingNameKey != null)) {
+      throw Exception(
+          'ChooserBloc.editingNameRequest(): request made while request is in progress.');
+    }
+    await getAlbums();
+    _editingNameKey = key;
+    _editingNameStream.sink.add(_editingNameKey);
   }
 }
 

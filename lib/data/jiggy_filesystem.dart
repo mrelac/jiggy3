@@ -25,6 +25,7 @@ class JiggyFilesystem {
 
   static Future<void> imageFileDelete(File imageFile) async {
     await imageFile.delete();
+    print('Deleted image file ${imageFile.path}');
   }
 
   // PRIVATE METHODS

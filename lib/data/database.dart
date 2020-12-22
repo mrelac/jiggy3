@@ -58,7 +58,7 @@ class DBProvider {
         .toList();
     if (albums.isNotEmpty) {
       for (Album album in albums) {
-        album.puzzles.addAll(await getPuzzlesByAlbum(album.id));
+        album.puzzles.addAll(await getPuzzlesByAlbumId(album.id));
       }
     }
     return albums;
@@ -68,16 +68,42 @@ class DBProvider {
     final db = await database;
     const insert = 'INSERT INTO album (name) VALUES (?)';
     album.id = await db.rawInsert(insert, [album.name]);
+    print('Inserted album ${album.name} into database');
   }
 
   /// Deletes albums using albumId. Removes bindings first.
-  Future<void> deleteAlbums(List<Album> albums) async {
-    print('Deleting ${albums.length} album(s)).');
-    _deleteBindingsByAlbum(albums);
-    final batch = (await database).batch();
-    albums.forEach((album) =>
-        batch.rawDelete("DELETE FROM album WHERE id = ?", [album.id]));
-    await batch.commit(noResult: true);
+  Future<void> deleteAlbum(int albumId) async {
+    _deleteBindingsByAlbumId(albumId);
+    final db = await database;
+    Album album = await getAlbumById(albumId);
+    int count = await db.rawDelete("DELETE FROM album WHERE id = ?", [albumId]);
+    if (count > 0) {
+      print('Deleted album ${album.name} from database');
+    }
+  }
+
+  /// Return album from albumId. Returns album instance if found; null otherwise
+  Future<Album> getAlbumById(int albumId) async {
+    final db = await database;
+    const query = 'SELECT * FROM album WHERE id = ?';
+    List<Album> albumList = (await db.rawQuery(query, [albumId]))
+        .map<Album>((json) => Album.fromMap(json))
+        .toList();
+    return albumList.isEmpty ? null : albumList.first;
+  }
+
+  Future<Album> getAlbumByPuzzleId(int puzzleId) async {
+    const query = '''
+SELECT a.* FROM album a
+ JOIN album_puzzle ap ON ap.album_id = a.id
+ JOIN puzzle p ON p.id = ap.puzzle_id
+ WHERE p.id = ?;
+    ''';
+    final db = await database;
+    List<Album> results = (await db.rawQuery(query, [puzzleId]))
+        .map<Album>((json) => Album.fromMap(json))
+        .toList();
+    return results.isNotEmpty ? results.first : null;
   }
 
   // PUZZLES
@@ -114,22 +140,41 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ]);
   }
 
-  /// Deletes puzzles using puzzle id. Removes bindings first.
-  Future<void> deletePuzzles(List<Puzzle> puzzles) async {
+  /// Deletes puzzle using puzzle id. Removes binding, if any, first.
+  Future<void> deletePuzzle(int puzzleId) async {
     final db = await database;
-    Batch batch = db.batch();
-    puzzles.forEach((puzzle) async {
-      _deleteBindingsByPuzzle(puzzles);
-      print('Deleting puzzle ${puzzle.name}');
-      batch.rawDelete('DELETE FROM puzzle WHERE id = ?', [puzzle.id]);
-    });
-    await batch.commit(noResult: true);
+    Puzzle puzzle = await getPuzzleById(puzzleId);
+    const delete = 'DELETE FROM puzzle WHERE id = ?';
+    _deleteBindingByPuzzleId(puzzleId);
+    int count = await db.rawDelete(delete, [puzzleId]);
+    if (count > 0) {
+      print('Deleted puzzle ${puzzle.name} from database');
+    }
+  }
+
+  /// Return puzzle from puzzleId. Returns puzzle instance if found; null otherwise
+  Future<Puzzle> getPuzzleById(int puzzleId) async {
+    final db = await database;
+    const query = 'SELECT * FROM puzzle WHERE id = ?';
+    List<Puzzle> puzzleList = (await db.rawQuery(query, [puzzleId]))
+        .map<Puzzle>((json) => Puzzle.fromMap(json))
+        .toList();
+    return puzzleList.isEmpty ? null : puzzleList.first;
+  }
+
+  Future<void> updatePuzzleName(String oldName, String newName) async {
+    final db = await database;
+    const update = 'UPDATE puzzle SET name = ? WHERE name = ?';
+    int count = await db.rawUpdate(update, [newName, oldName]);
+    if (count > 0) {
+      print('Updated puzzle "$oldName" to "$newName"');
+    }
   }
 
   /// Return a list of jsonPuzzle entries matching albumId. An empty puzzle list
   /// is returned if there are no bound puzzles.
-  Future<List<Puzzle>> getPuzzlesByAlbum(int albumId) async {
-    const String query = '''
+  Future<List<Puzzle>> getPuzzlesByAlbumId(int albumId) async {
+    const query = '''
 SELECT p.* FROM puzzle p
  JOIN album_puzzle ap ON ap.puzzle_id = p.id
  JOIN album a ON a.id = ap.album_id
@@ -143,35 +188,39 @@ SELECT p.* FROM puzzle p
 
   /// Bind puzzle to album. Undefined behaviour if binding already exists.
   Future<void> bindAlbumAndPuzzle(int albumId, int puzzleId) async {
+    Puzzle puzzle = await getPuzzleById(puzzleId);
+    Album album = await getAlbumById(albumId);
     final db = await database;
-    const String insert =
-        'INSERT INTO album_puzzle(album_id, puzzle_id) VALUES(?, ?)';
+    const insert = 'INSERT INTO album_puzzle(album_id, puzzle_id) VALUES(?, ?)';
     await db.rawInsert(insert, [albumId, puzzleId]);
-      print('Bound puzzleId $puzzleId to albumId $albumId');
+    print('Bound puzzle ${puzzle.name} to album ${album.name}');
   }
 
-  // PRIVATE METHODS
+// PRIVATE METHODS
 
-  /// Deletes album_puzzle bindings for specified albums.
-  Future<void> _deleteBindingsByAlbum(List<Album> albums) async {
-    final Batch batch = (await database).batch();
-    albums.forEach((album) {
-      print('Unbinding all puzzles from album ${album.name}');
-      batch
-          .rawDelete("DELETE FROM album_puzzle WHERE album_id = ?", [album.id]);
-    });
-    await batch.commit(noResult: true);
+  /// Deletes album_puzzle bindings for specified album id.
+  Future<void> _deleteBindingsByAlbumId(int albumId) async {
+    final db = await database;
+    Album album = await getAlbumById(albumId);
+    const delete = 'DELETE FROM album_puzzle WHERE album_id = ?';
+    int count = await db.rawDelete(delete, [albumId]);
+    if (count > 0) {
+      print('Unbound all puzzles for album ${album.name}');
+    }
   }
 
-  /// Deletes album_puzzle bindings for specified puzzles.
-  Future<void> _deleteBindingsByPuzzle(List<Puzzle> puzzles) async {
-    final Batch batch = (await database).batch();
-    puzzles.forEach((puzzle) {
-      print('Unbinding puzzle ${puzzle.name}');
-      batch.rawDelete(
-          "DELETE FROM album_puzzle WHERE puzzle_id = ?", [puzzle.id]);
-    });
-    await batch.commit(noResult: true);
+  /// Deletes album_puzzle bindings for specified puzzle id, if any exist.
+  Future<void> _deleteBindingByPuzzleId(int puzzleId) async {
+    final db = await database;
+    final Album album = await getAlbumByPuzzleId(puzzleId);
+    if (album != null) {
+      Puzzle puzzle = await getPuzzleById(puzzleId);
+      const delete = 'DELETE FROM album_puzzle WHERE puzzle_id = ?';
+      int count = await db.rawDelete(delete, [puzzleId]);
+      if (count > 0) {
+        print('Unbound puzzle ${puzzle.name} from album ${album.name}');
+      }
+    }
   }
 
   void _createTables(Database db, int version) {

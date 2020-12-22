@@ -26,7 +26,6 @@ class ChooserService {
     return fullBytes;
   }
 
-
   static void printTime(String prefix, [DateTime date]) {
     final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(date ?? DateTime.now());
     print('$prefix: $formattedDate');

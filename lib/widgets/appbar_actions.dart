@@ -4,40 +4,42 @@ import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:provider/provider.dart';
 
 class AppBarActions {
-
   static List<Widget> buildAppBaEditActions(ChooserBloc chooserBloc) {
+    final markedForDeleteCount = chooserBloc.countItemsMarkedForDelete();
     return <Widget>[
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Tooltip(
           message: 'Dump tables',
           child: IconButton(
-              iconSize: 40,
-              icon: Icon(Icons.category),
-              onPressed: () async => await chooserBloc.dumpTables(),
+            iconSize: 40,
+            icon: Icon(Icons.category),
+            onPressed: () async => await chooserBloc.dumpTables(),
           ),
         ),
       ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Tooltip(
-          message: 'Delete selected items',
-          child: IconButton(
+      if (markedForDeleteCount > 0)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Tooltip(
+            message:
+                'Delete $markedForDeleteCount selected items',
+            child: IconButton(
               iconSize: 40,
               icon: Icon(Icons.delete),
-              onPressed: () {
-                // _deleteSelected();
-              }),
+              onPressed: () async => await chooserBloc.deleteSelectedItems(),
+            ),
+          ),
         ),
-      ),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Tooltip(
           message: 'Create new album',
           child: IconButton(
               iconSize: 40,
-              icon: Icon(Icons.add_photo_alternate),
+              icon: Icon(Icons.add_to_photos),
               onPressed: () {
+                // TODO - Create new album
                 // _addNewAlbum();
               }),
         ),
@@ -50,6 +52,7 @@ class AppBarActions {
               iconSize: 40,
               icon: Icon(Icons.add_photo_alternate),
               onPressed: () {
+                // TODO - Add a photo
                 print('Add a photo');
                 // _addNewPuzzle();
               }),
@@ -60,9 +63,9 @@ class AppBarActions {
         child: Tooltip(
           message: 'Drop database and reload from assets',
           child: IconButton(
-              iconSize: 40,
-              icon: Icon(Icons.refresh),
-              onPressed: () async => await chooserBloc.applicationReset(),
+            iconSize: 40,
+            icon: Icon(Icons.refresh),
+            onPressed: () async => await chooserBloc.applicationReset(),
           ),
         ),
       ),
@@ -85,21 +88,11 @@ class AppBarActions {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Tooltip(
-          message: 'Delete selected items',
-          child: IconButton(
-            iconSize: 40,
-            icon: Icon(Icons.delete),
-            // onPressed: () => _deleteSelected(),
-          ),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Tooltip(
           message: 'Create new album',
           child: IconButton(
             iconSize: 40,
             icon: Icon(Icons.add_to_photos),
+            // TODO - Create new album
             // onPressed: () => _addNewAlbum(),
           ),
         ),
@@ -111,6 +104,7 @@ class AppBarActions {
           child: IconButton(
             iconSize: 40,
             icon: Icon(Icons.add_photo_alternate),
+            // TODO - Create new album
             // onPressed: () => _addNewPuzzle()
           ),
         ),

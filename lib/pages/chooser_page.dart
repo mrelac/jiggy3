@@ -43,8 +43,8 @@ class _ChooserPageState extends State<ChooserPage> {
     _appBar = _appBarStandard;
     BlocProvider.of<ChooserBloc>(context).setEditMode(false);
     BlocProvider.of<ChooserBloc>(context).editModeStream.listen(
-            (isInEditMode) => setState(
-                () => _appBar = isInEditMode ? _appBarEdit : _appBarStandard));
+        (isInEditMode) => setState(
+            () => _appBar = isInEditMode ? _appBarEdit : _appBarStandard));
   }
 
   bool get isInEditMode {
@@ -99,7 +99,6 @@ class _ChooserPageState extends State<ChooserPage> {
           onLongPress: () {
             if (!isInEditMode) {
               chooserBloc.setEditMode(true);
-              chooserBloc.clearItemsMarkedForDelete();
             }
           }),
       Container(
@@ -113,13 +112,14 @@ class _ChooserPageState extends State<ChooserPage> {
                   key: Key('$index'),
                   color: Colors.orange[50],
                   child: ChooserCardEditing(
+                    bloc: chooserBloc,
+                    id: album.puzzles[index].id,
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
-                    isDeleteTicked:
-                        chooserBloc.shouldDeletePuzzle(album.puzzles[index].id),
+                    isDeleteTicked: chooserBloc
+                        .isPuzzleMarkedForDelete(album.puzzles[index].id),
                     onDeleteToggle: (newValue) => chooserBloc
                         .toggleDeletePuzzle(album.puzzles[index], newValue),
-                    // onEditTap: onEditTap,
                   ),
                 );
               } else {
@@ -132,7 +132,6 @@ class _ChooserPageState extends State<ChooserPage> {
                     onLongPress: () {
                       if (!isInEditMode) {
                         chooserBloc.setEditMode(true);
-                        chooserBloc.clearItemsMarkedForDelete();
                       }
                     },
                     onTap: () =>
@@ -154,7 +153,8 @@ class _ChooserPageState extends State<ChooserPage> {
             BlocProvider.of<ChooserBloc>(context).setEditMode(false),
       ),
       backgroundColor: Colors.green[100],
-      actions: AppBarActions.buildAppBaEditActions(BlocProvider.of<ChooserBloc>(context)),
+      actions: AppBarActions.buildAppBaEditActions(
+          BlocProvider.of<ChooserBloc>(context)),
     );
   }
 
@@ -164,7 +164,8 @@ class _ChooserPageState extends State<ChooserPage> {
       title: Text("Jiggy!"),
       backgroundColor: Colors.amber[100],
       elevation: 0.0,
-      actions: AppBarActions.buildAppBarStandardActions(BlocProvider.of<ChooserBloc>(context)),
+      actions: AppBarActions.buildAppBarStandardActions(
+          BlocProvider.of<ChooserBloc>(context)),
     );
   }
 }
