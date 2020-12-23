@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
@@ -13,6 +14,19 @@ import 'package:provider/provider.dart';
 
 const ARG_RESET =
     String.fromEnvironment('applicationReset', defaultValue: 'false');
+
+
+// TODO - Bugs
+// - Make textfield widget keys unique so only one widget is edited at a time
+// - Refactor delete checkbox to EditingNameBloc and fix it
+// - Implement DeleteItems
+// - Implement edit album name
+// - Implement AddAlbum
+// - Implement AddPuzzle
+// - Implement move puzzle
+// - Figure out how to display entire textfield error message
+// - Figure out how to get keyboard to NOT cover editing textfield
+//
 
 /// The ChooserPage is where puzzles can be browsed and selected to play.
 /// It is a StatefulWidget solely to take advantage of initState(), which

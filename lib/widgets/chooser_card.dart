@@ -5,9 +5,10 @@ import 'package:flutter/painting.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/blocs/editing_name_bloc.dart';
 
-const double imageHeightNotEditing = 120.0;
-const double imageHeightEditing = 80.0;
-const double cardWidth = 130.0;
+const double IMAGE_HEIGHT_NOT_EDITING = 120.0;
+const double IMAGE_HEIGHT_EDITING = 80.0;
+const double CARD_WIDTH = 130.0;
+const int MAX_NAME_LENGTH = 16;
 
 class ChooserCard extends StatelessWidget {
   final String name;
@@ -38,8 +39,8 @@ class ChooserCard extends StatelessWidget {
             children: [
               Container(
                 color: Colors.grey[200],
-                height: imageHeightNotEditing,
-                width: cardWidth,
+                height: IMAGE_HEIGHT_NOT_EDITING,
+                width: CARD_WIDTH,
                 padding: imagePadding,
                 child: IconButton(
                   iconSize: 250,
@@ -133,15 +134,15 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
           Container(
             alignment: Alignment.topLeft,
             height: checkboxHeight,
-            width: cardWidth,
+            width: CARD_WIDTH,
             child: Checkbox(
               value: widget.isDeleteTicked ?? false,
             ),
           ),
           Container(
             color: Colors.grey[200],
-            height: imageHeightEditing,
-            width: cardWidth,
+            height: IMAGE_HEIGHT_EDITING,
+            width: CARD_WIDTH,
             padding: imagePadding,
             child: IconButton(
               iconSize: iconSize,
@@ -220,6 +221,8 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
                   focusNode: _editingNameFocusNode,
                   controller: _editingNameController,
                   style: Theme.of(context).textTheme.headline6,
+                  maxLength: MAX_NAME_LENGTH,
+                  maxLengthEnforced: true,
                   onChanged: (String text) {
                     _editingNameBloc.update(
                         widget.name, _editingNameController.text);
