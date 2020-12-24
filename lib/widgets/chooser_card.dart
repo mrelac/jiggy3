@@ -17,12 +17,11 @@ class ChooserCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const ChooserCard({
-    Key key,
     @required this.name,
     @required this.thumb,
     this.onLongPress,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +64,7 @@ class ChooserCard extends StatelessWidget {
 typedef OnDeleteToggled = void Function(bool);
 
 class ChooserCardEditing extends StatefulWidget {
-  final Key key;
+  final String albumName;
   final ChooserBloc bloc;
   final int id;
   final String name;
@@ -74,14 +73,14 @@ class ChooserCardEditing extends StatefulWidget {
   final OnDeleteToggled onDeleteToggle;
 
   ChooserCardEditing({
-    @required this.key,
+    @required this.albumName,
     @required this.bloc,
     @required this.id,
     @required this.name,
     @required this.thumb,
     @required this.isDeleteTicked,
     @required this.onDeleteToggle,
-  }) : super(key: key);
+  });
 
   _ChooserCardEditingState createState() => _ChooserCardEditingState();
 }
@@ -91,20 +90,11 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
   final _editingNameController = TextEditingController();
   final FocusNode _editingNameFocusNode = FocusNode();
 
-  Key get myEditingNameKey => Key('c-${widget.id.toString()}');
+  Key get myEditingNameKey =>
+      Key('${widget.albumName}-${widget.id.toString()}');
   Key _currentEditingNameKey;
 
   Key get currentEditingNameKey => _currentEditingNameKey;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.bloc.editingNameStream.listen((key) {
-      _currentEditingNameKey = key;
-      // FIXME FIXME FIXME
-      print('LISTENING: GOT KEY $key. my key: $myEditingNameKey');
-    });
-  }
 
   @override
   void dispose() {
@@ -169,8 +159,6 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
   Widget editingNameHandler(double labelHeight) {
     widget.bloc.editingNameStream.listen((key) {
       _currentEditingNameKey = key;
-      // FIXME FIXME FIXME
-      print('LISTENING: GOT KEY $key. my key: $myEditingNameKey');
     });
 
     _editingNameBloc.excludedNames = widget.bloc.getPuzzleNames();

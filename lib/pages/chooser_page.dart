@@ -15,7 +15,6 @@ import 'package:provider/provider.dart';
 const ARG_RESET =
     String.fromEnvironment('applicationReset', defaultValue: 'false');
 
-
 // TODO - Bugs
 // - Make textfield widget keys unique so only one widget is edited at a time
 // - Refactor delete checkbox to EditingNameBloc and fix it
@@ -26,6 +25,7 @@ const ARG_RESET =
 // - Implement move puzzle
 // - Figure out how to display entire textfield error message
 // - Figure out how to get keyboard to NOT cover editing textfield
+// - Append date to puzzleImage, as the puzzle name can change
 //
 
 /// The ChooserPage is where puzzles can be browsed and selected to play.
@@ -34,7 +34,7 @@ const ARG_RESET =
 class ChooserPage extends StatefulWidget {
   final String title;
 
-  ChooserPage({Key key, @required this.title});
+  ChooserPage({@required this.title});
 
   _ChooserPageState createState() => _ChooserPageState();
 }
@@ -100,6 +100,7 @@ class _ChooserPageState extends State<ChooserPage> {
   List<Widget> _buildAlbumsAndPuzzles(List<Album> albums) {
     final wlist = <Widget>[];
     albums.forEach((album) => wlist.addAll(_buildAlbumAndPuzzles(album)));
+
     return wlist;
   }
 
@@ -128,6 +129,7 @@ class _ChooserPageState extends State<ChooserPage> {
                   child: ChooserCardEditing(
                     bloc: chooserBloc,
                     id: album.puzzles[index].id,
+                    albumName: album.name,
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
                     isDeleteTicked: chooserBloc

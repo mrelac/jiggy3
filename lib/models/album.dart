@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:jiggy3/models/puzzle.dart';
 
 // Latest thoughts (30-Nov-2020):
@@ -9,14 +8,12 @@ import 'package:jiggy3/models/puzzle.dart';
 
 /// Keeps track of an album
 class Album {
-  Key key;
   int id;
   String name;
   List<Puzzle> puzzles;
   bool isSelectable; // true if album can be modified/deleted
 
   Album({
-    this.key,
     this.id,
     this.name,
     this.puzzles,
