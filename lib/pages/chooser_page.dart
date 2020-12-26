@@ -57,13 +57,13 @@ class _ChooserPageState extends State<ChooserPage> {
     _appBarStandard = _buildAppBarStandardActions();
     _appBar = _appBarStandard;
     BlocProvider.of<ChooserBloc>(context).setEditMode(false);
-    BlocProvider.of<ChooserBloc>(context, listen:false).editModeStream.listen(
+    BlocProvider.of<ChooserBloc>(context, listen: false).editModeStream.listen(
         (isInEditMode) => setState(
             () => _appBar = isInEditMode ? _appBarEdit : _appBarStandard));
   }
 
   bool get isInEditMode {
-    return BlocProvider.of<ChooserBloc>(context, listen:false).isInEditMode;
+    return BlocProvider.of<ChooserBloc>(context, listen: false).isInEditMode;
   }
 
   @override
@@ -110,9 +110,7 @@ class _ChooserPageState extends State<ChooserPage> {
     ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
     return [
       AlbumBuilder(
-          isInEditMode: isInEditMode,
-          album: album,
-          onLongPress: _onLongPress),
+          isInEditMode: isInEditMode, album: album, onLongPress: _onLongPress),
       Container(
         height: 164, // Must be specified or renderer fails
         child: ListView.builder(
@@ -124,7 +122,6 @@ class _ChooserPageState extends State<ChooserPage> {
                   key: Key('$index'),
                   color: Colors.orange[50],
                   child: ChooserCardEditing(
-                    bloc: chooserBloc,
                     id: album.puzzles[index].id,
                     albumName: album.name,
                     name: album.puzzles[index].name,
@@ -164,12 +161,12 @@ class _ChooserPageState extends State<ChooserPage> {
       leading: IconButton(
         iconSize: 40.0,
         icon: Icon(Icons.cancel),
-        onPressed: () =>
-            BlocProvider.of<ChooserBloc>(context, listen: false).setEditMode(false),
+        onPressed: () => BlocProvider.of<ChooserBloc>(context, listen: false)
+            .setEditMode(false),
       ),
       backgroundColor: Colors.green[100],
       actions: AppBarActions.buildAppBaEditActions(
-          BlocProvider.of<ChooserBloc>(context, listen:false)),
+          BlocProvider.of<ChooserBloc>(context, listen: false)),
     );
   }
 
@@ -180,7 +177,7 @@ class _ChooserPageState extends State<ChooserPage> {
       backgroundColor: Colors.amber[100],
       elevation: 0.0,
       actions: AppBarActions.buildAppBarStandardActions(
-          BlocProvider.of<ChooserBloc>(context, listen:false)),
+          BlocProvider.of<ChooserBloc>(context, listen: false)),
     );
   }
 }

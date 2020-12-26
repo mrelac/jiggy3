@@ -5,7 +5,9 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/blocs/editing_name_bloc.dart';
+import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/pages/chooser_page.dart';
+import 'package:provider/provider.dart';
 
 const double IMAGE_HEIGHT_NOT_EDITING = 120.0;
 const double IMAGE_HEIGHT_EDITING = 80.0;
@@ -66,7 +68,6 @@ typedef OnDeleteToggled = void Function(bool);
 
 class ChooserCardEditing extends StatefulWidget {
   final String albumName;
-  final ChooserBloc bloc;
   final int id;
   final String name;
   final Uint8List thumb;
@@ -75,7 +76,6 @@ class ChooserCardEditing extends StatefulWidget {
 
   ChooserCardEditing({
     @required this.albumName,
-    @required this.bloc,
     @required this.id,
     @required this.name,
     @required this.thumb,
@@ -92,7 +92,9 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
   final _teController = TextEditingController();
 
   Key _currentEditingNameKey;
+
   Key get currentEditingNameKey => _currentEditingNameKey;
+
   Key get myEditingNameKey =>
       Key('${widget.albumName}-${widget.id.toString()}');
 
@@ -128,130 +130,151 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
   void _endEditing() {
     _editingNameFocusNode.unfocus();
     _teController.text = widget.name;
-    widget.bloc.editingNameRequest(null);
+    // widget.bloc.editingNameRequest(null);
+    Provider.of<ChooserBloc>(context, listen: false).editingNameRequest(null);
   }
+
+  final imagePadding = EdgeInsets.fromLTRB(10, 0, 10, 0);
+  final labelPadding = EdgeInsets.fromLTRB(10, 0, 10, 0);
+  final double iconSize = 250.0;
+  final labelHeight = 40.0;
+  final checkboxHeight = 30.0;
 
   @override
   Widget build(BuildContext context) {
-    const imagePadding = EdgeInsets.fromLTRB(10, 0, 10, 0);
-    const labelPadding = EdgeInsets.fromLTRB(10, 0, 10, 0);
-    const double iconSize = 250.0;
-    const labelHeight = 40.0;
-    const checkboxHeight = 30.0;
-
-    _enBloc.excludedNames = widget.bloc.getPuzzleNames();
-
     return Card(
-      color: Colors.grey[200],
-      child: Column(
-        children: [
-          Container(
-            alignment: Alignment.topLeft,
-            height: checkboxHeight,
-            width: CARD_WIDTH,
-            child: Checkbox(
-              value: widget.isDeleteTicked ?? false,
-            ),
-          ),
-          Container(
-            color: Colors.grey[200],
-            height: IMAGE_HEIGHT_EDITING,
-            width: CARD_WIDTH,
-            padding: imagePadding,
-            child: IconButton(
-              iconSize: iconSize,
-              icon: Image.memory(widget.thumb),
-            ),
-          ),
-          Row(
-            children: [
-              Container(
-                height: labelHeight, // Keep text fixed size.
-                padding: labelPadding,
-                child: Center(
-                  child: getPuzzleNameWidget(context),
+        color: Colors.grey[200],
+        child: Builder(builder: (context) {
+          if (editMode == EditMode.NobodyEditing) {
+            return Column(
+              children: [
+                generateCheckBox(),
+                generateThumb(),
+                Row(
+                  children: [generateText(), generateEditHandler()],
                 ),
-              ),
-              editingNameHandler(labelHeight),
-            ],
-          ),
-        ],
+              ],
+            );
+          } else if (editMode == EditMode.IsEditingNotSelf) {
+            return Column(children: [generateThumb(), generateText()]);
+          } else if (editMode == EditMode.IsEditingSelf) {
+            return Column(
+              children: [
+                generateThumb(),
+                Row(children: [generateTextField(), generateCancelHandler()]),
+              ],
+            );
+          } else {
+            throw Exception('Unexpected edit mode $editMode');
+          }
+        }));
+  }
+
+  Widget generateCancelHandler() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0),
+      child: IconButton(
+        iconSize: 30,
+        icon: Icon(Icons.cancel),
+        onPressed: () => _endEditing(),
       ),
     );
   }
 
-  Widget editingNameHandler(double labelHeight) {
-    widget.bloc.editingNameStream.listen((key) {
-      _currentEditingNameKey = key;
-    });
-
-    if (widget.bloc.editingNameKey == myEditingNameKey) {
-      return Container(
-        height: labelHeight, // Keep text fixed size.
-        padding: const EdgeInsets.only(left: 16.0),
-        child: IconButton(
-          iconSize: 30,
-          icon: Icon(Icons.cancel),
-          onPressed: () {
-            _endEditing();
-          },
-        ),
-      );
-    } else if (widget.bloc.editingNameKey == null) {
-      // Return edit handler
-      return Container(
-        height: labelHeight, // Keep text fixed size.
-        padding: const EdgeInsets.only(left: 16.0),
-        child: IconButton(
-          iconSize: 30,
-          icon: Icon(Icons.edit),
-          onPressed: () => widget.bloc.editingNameRequest(myEditingNameKey),
-        ),
-      );
-    } else {
-      // Return empty Container
-      return Container();
-    }
+  Widget generateCheckBox() {
+    final ChooserBloc bloc = Provider.of<ChooserBloc>(
+      context,
+    );
+    Puzzle puzzle = Puzzle(id: widget.id, name: widget.name);
+    return Container(
+      alignment: Alignment.topLeft,
+      height: checkboxHeight,
+      width: CARD_WIDTH,
+      child: Checkbox(
+          value: bloc.isPuzzleMarkedForDelete(widget.id),
+          onChanged: (newValue) => bloc.toggleDeletePuzzle(puzzle, newValue)),
+    );
   }
 
-  Widget getPuzzleNameWidget(BuildContext context) {
-    if (currentEditingNameKey == myEditingNameKey) {
-      _teController.text = widget.name;
-      _teController.selection =
-          TextSelection(baseOffset: 0, extentOffset: widget.name.length);
-      return SizedBox(
-        height: 200.0,
-        width: 200.0,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 5.0),
-          child: StreamBuilder<String>(
-              stream: _enBloc.textStream,
-              builder: (context, textStream) {
-                return TextField(
-                  focusNode: _editingNameFocusNode,
-                  controller: _teController,
-                  style: Theme.of(context).textTheme.headline6,
-                  maxLength: ChooserPage.MAX_NAME_LENGTH,
-                  decoration: InputDecoration(
-                    labelStyle: Theme.of(context).textTheme.headline6,
-                    errorText: textStream.hasError ? textStream.error : null,
-                  ),
-                  keyboardType: TextInputType.text,
-                  textCapitalization: TextCapitalization.words,
-                  autofocus: true,
-                  autocorrect: false,
-                  onSubmitted: ((newName) {
-                    if (!textStream.hasError) {
-                      widget.bloc.updatePuzzleName(widget.name, newName);
-                      _endEditing();
-                    }
-                  }),
-                );
-              }),
-        ),
-      );
+  Widget generateEditHandler() {
+    final ChooserBloc bloc = Provider.of<ChooserBloc>(context);
+    return Container(
+      height: labelHeight, // Keep text fixed size.
+      padding: const EdgeInsets.only(left: 16.0),
+      child: IconButton(
+        iconSize: 30,
+        icon: Icon(Icons.edit),
+        onPressed: () => bloc.editingNameRequest(myEditingNameKey),
+      ),
+    );
+  }
+
+  Widget generateText() {
+    return Text(widget.name, style: Theme.of(context).textTheme.headline6);
+  }
+
+  Widget generateTextField() {
+    _teController.text = widget.name;
+    _teController.selection =
+        TextSelection(baseOffset: 0, extentOffset: widget.name.length);
+    final ChooserBloc bloc = Provider.of<ChooserBloc>(context);
+    return SizedBox(
+      // height: 70.0,
+      width: 200.0,
+      child: Container(
+        // padding: const EdgeInsets.only(top: 0.0),
+        child: StreamBuilder<String>(
+            stream: _enBloc.textStream,
+            builder: (context, textStream) {
+              _enBloc.excludedNames = bloc.getPuzzleNames();
+              return TextField(
+                focusNode: _editingNameFocusNode,
+                controller: _teController,
+                style: Theme.of(context).textTheme.headline6,
+                maxLength: ChooserPage.MAX_NAME_LENGTH,
+                decoration: InputDecoration(
+                  labelStyle: Theme.of(context).textTheme.headline6,
+                  errorText: textStream.hasError ? textStream.error : null,
+                ),
+                keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.words,
+                autofocus: true,
+                autocorrect: false,
+                onSubmitted: ((newName) {
+                  if (!textStream.hasError) {
+                    bloc.updatePuzzleName(widget.name, newName);
+                    _endEditing();
+                  }
+                }),
+              );
+            }),
+      ),
+    );
+  }
+
+  Widget generateThumb() {
+    return Container(
+      color: Colors.grey[200],
+      height: IMAGE_HEIGHT_EDITING,
+      width: CARD_WIDTH,
+      padding: imagePadding,
+      child: IconButton(
+        iconSize: iconSize,
+        icon: Image.memory(widget.thumb),
+      ),
+    );
+  }
+
+  EditMode get editMode {
+    final ChooserBloc bloc = Provider.of<ChooserBloc>(context);
+    if (bloc.editingNameKey == null) {
+      return EditMode.NobodyEditing;
+    } else if (bloc.editingNameKey == myEditingNameKey) {
+      return EditMode.IsEditingSelf;
     } else {
-      return Text(widget.name, style: Theme.of(context).textTheme.headline6);
+      return EditMode.IsEditingNotSelf;
     }
   }
 }
+
+enum EditMode { NobodyEditing, IsEditingSelf, IsEditingNotSelf }

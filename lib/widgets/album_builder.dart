@@ -13,9 +13,7 @@ class AlbumBuilder extends StatefulWidget {
   final bool isInEditMode;
 
   const AlbumBuilder(
-      {@required this.album,
-      @required this.isInEditMode,
-      this.onLongPress});
+      {@required this.album, @required this.isInEditMode, this.onLongPress});
 
   _AlbumBuilderState createState() => _AlbumBuilderState();
 }
@@ -26,7 +24,9 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
   final _teController = TextEditingController();
 
   Key _currentEditingNameKey;
+
   Key get currentEditingNameKey => _currentEditingNameKey;
+
   Key get myEditingNameKey => Key('${widget.album.name}');
 
   @override
@@ -93,6 +93,39 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
     );
   }
 
+  Widget generateCancelHandler() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0),
+      child: IconButton(
+        iconSize: 30,
+        icon: Icon(Icons.cancel),
+        onPressed: () => _endEditing(),
+      ),
+    );
+  }
+
+  Widget generateCheckBox() {
+    final ChooserBloc bloc = Provider.of<ChooserBloc>(context, listen: true);
+    return Padding(
+        padding: const EdgeInsets.only(right: 16.0),
+        child: Checkbox(
+            value: bloc.isAlbumMarkedForDelete(widget.album.id),
+            onChanged: (newValue) =>
+                bloc.toggleDeleteAlbum(widget.album, newValue)));
+  }
+
+  Widget generateEditHandler() {
+    final ChooserBloc bloc = Provider.of<ChooserBloc>(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 16.0),
+      child: IconButton(
+        iconSize: 40,
+        icon: Icon(Icons.edit),
+        onPressed: () => bloc.editingNameRequest(myEditingNameKey),
+      ),
+    );
+  }
+
   Padding generateText() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -142,39 +175,6 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
               ),
             );
           }),
-    );
-  }
-
-  Widget generateCheckBox() {
-    final ChooserBloc bloc = Provider.of<ChooserBloc>(context, listen: true);
-    return Padding(
-        padding: const EdgeInsets.only(right: 16.0),
-        child: Checkbox(
-            value: bloc.isAlbumMarkedForDelete(widget.album.id),
-            onChanged: (newValue) =>
-                bloc.toggleDeleteAlbum(widget.album, newValue)));
-  }
-
-  Widget generateEditHandler() {
-    final ChooserBloc bloc = Provider.of<ChooserBloc>(context);
-    return Padding(
-      padding: const EdgeInsets.only(left: 16.0),
-      child: IconButton(
-        iconSize: 40,
-        icon: Icon(Icons.edit),
-        onPressed: () => bloc.editingNameRequest(myEditingNameKey),
-      ),
-    );
-  }
-
-  Widget generateCancelHandler() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16.0),
-      child: IconButton(
-        iconSize: 30,
-        icon: Icon(Icons.cancel),
-        onPressed: () => _endEditing(),
-      ),
     );
   }
 
