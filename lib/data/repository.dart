@@ -54,6 +54,10 @@ class Repository {
     await DBProvider.db.deleteAlbum(albumId);
   }
 
+  static Future<void> updateAlbumName(String oldName, String newName) async {
+    await DBProvider.db.updateAlbumName(oldName, newName);
+  }
+
   // PUZZLES
 
   // Get all puzzles

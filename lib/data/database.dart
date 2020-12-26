@@ -82,6 +82,15 @@ class DBProvider {
     }
   }
 
+  Future<void> updateAlbumName(String oldName, String newName) async {
+    final db = await database;
+    const update = 'UPDATE album SET name = ? WHERE name = ?';
+    int count = await db.rawUpdate(update, [newName, oldName]);
+    if (count > 0) {
+      print('Updated album "$oldName" to "$newName"');
+    }
+  }
+
   /// Return album from albumId. Returns album instance if found; null otherwise
   Future<Album> getAlbumById(int albumId) async {
     final db = await database;

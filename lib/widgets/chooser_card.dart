@@ -2,13 +2,14 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/blocs/editing_name_bloc.dart';
+import 'package:jiggy3/pages/chooser_page.dart';
 
 const double IMAGE_HEIGHT_NOT_EDITING = 120.0;
 const double IMAGE_HEIGHT_EDITING = 80.0;
 const double CARD_WIDTH = 130.0;
-const int MAX_NAME_LENGTH = 16;
 
 class ChooserCard extends StatelessWidget {
   final String name;
@@ -86,26 +87,47 @@ class ChooserCardEditing extends StatefulWidget {
 }
 
 class _ChooserCardEditingState extends State<ChooserCardEditing> {
-  final _editingNameBloc = EditingNameBloc();
-  final _editingNameController = TextEditingController();
-  final FocusNode _editingNameFocusNode = FocusNode();
+  final _editingNameFocusNode = FocusNode();
+  final _enBloc = EditingNameBloc();
+  final _teController = TextEditingController();
 
+  Key _currentEditingNameKey;
+  Key get currentEditingNameKey => _currentEditingNameKey;
   Key get myEditingNameKey =>
       Key('${widget.albumName}-${widget.id.toString()}');
-  Key _currentEditingNameKey;
 
-  Key get currentEditingNameKey => _currentEditingNameKey;
+  @override
+  void initState() {
+    super.initState();
+    _teController.addListener(_teListener);
+  }
+
+  void _teListener() {
+    if (_teController.text.length > ChooserPage.MAX_NAME_LENGTH + 1) {
+      String text =
+          _teController.text.substring(0, ChooserPage.MAX_NAME_LENGTH + 1);
+      _teController.value = _teController.value.copyWith(
+        text: text,
+        selection:
+            TextSelection(baseOffset: text.length, extentOffset: text.length),
+        composing: TextRange.empty,
+      );
+    }
+    _enBloc.update(widget.name, _teController.text);
+  }
 
   @override
   void dispose() {
     super.dispose();
-    _editingNameBloc.dispose();
-    _editingNameController.dispose();
+    _enBloc.dispose();
+    _teController.removeListener(_teListener);
+    _teController.dispose();
     _editingNameFocusNode.dispose();
   }
 
-  void cancelEditing() {
+  void _endEditing() {
     _editingNameFocusNode.unfocus();
+    _teController.text = widget.name;
     widget.bloc.editingNameRequest(null);
   }
 
@@ -116,6 +138,8 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
     const double iconSize = 250.0;
     const labelHeight = 40.0;
     const checkboxHeight = 30.0;
+
+    _enBloc.excludedNames = widget.bloc.getPuzzleNames();
 
     return Card(
       color: Colors.grey[200],
@@ -161,17 +185,16 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
       _currentEditingNameKey = key;
     });
 
-    _editingNameBloc.excludedNames = widget.bloc.getPuzzleNames();
-
     if (widget.bloc.editingNameKey == myEditingNameKey) {
-      // return cancel block
       return Container(
         height: labelHeight, // Keep text fixed size.
         padding: const EdgeInsets.only(left: 16.0),
         child: IconButton(
           iconSize: 30,
           icon: Icon(Icons.cancel),
-          onPressed: () => cancelEditing(),
+          onPressed: () {
+            _endEditing();
+          },
         ),
       );
     } else if (widget.bloc.editingNameKey == null) {
@@ -193,28 +216,22 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
 
   Widget getPuzzleNameWidget(BuildContext context) {
     if (currentEditingNameKey == myEditingNameKey) {
-      _editingNameController.text = widget.name;
-      _editingNameController.selection =
+      _teController.text = widget.name;
+      _teController.selection =
           TextSelection(baseOffset: 0, extentOffset: widget.name.length);
-
       return SizedBox(
         height: 200.0,
         width: 200.0,
         child: Padding(
           padding: const EdgeInsets.only(top: 5.0),
           child: StreamBuilder<String>(
-              stream: _editingNameBloc.textStream,
+              stream: _enBloc.textStream,
               builder: (context, textStream) {
                 return TextField(
                   focusNode: _editingNameFocusNode,
-                  controller: _editingNameController,
+                  controller: _teController,
                   style: Theme.of(context).textTheme.headline6,
-                  maxLength: MAX_NAME_LENGTH,
-                  maxLengthEnforced: true,
-                  onChanged: (String text) {
-                    _editingNameBloc.update(
-                        widget.name, _editingNameController.text);
-                  },
+                  maxLength: ChooserPage.MAX_NAME_LENGTH,
                   decoration: InputDecoration(
                     labelStyle: Theme.of(context).textTheme.headline6,
                     errorText: textStream.hasError ? textStream.error : null,
@@ -226,7 +243,7 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
                   onSubmitted: ((newName) {
                     if (!textStream.hasError) {
                       widget.bloc.updatePuzzleName(widget.name, newName);
-                      widget.bloc.editingNameRequest(null);
+                      _endEditing();
                     }
                   }),
                 );

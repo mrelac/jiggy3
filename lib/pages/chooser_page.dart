@@ -33,6 +33,7 @@ const ARG_RESET =
 ///   is executed only once.
 class ChooserPage extends StatefulWidget {
   final String title;
+  static const int MAX_NAME_LENGTH = 16;
 
   ChooserPage({@required this.title});
 
@@ -56,13 +57,13 @@ class _ChooserPageState extends State<ChooserPage> {
     _appBarStandard = _buildAppBarStandardActions();
     _appBar = _appBarStandard;
     BlocProvider.of<ChooserBloc>(context).setEditMode(false);
-    BlocProvider.of<ChooserBloc>(context).editModeStream.listen(
+    BlocProvider.of<ChooserBloc>(context, listen:false).editModeStream.listen(
         (isInEditMode) => setState(
             () => _appBar = isInEditMode ? _appBarEdit : _appBarStandard));
   }
 
   bool get isInEditMode {
-    return BlocProvider.of<ChooserBloc>(context).isInEditMode;
+    return BlocProvider.of<ChooserBloc>(context, listen:false).isInEditMode;
   }
 
   @override
@@ -109,13 +110,9 @@ class _ChooserPageState extends State<ChooserPage> {
     ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
     return [
       AlbumBuilder(
-          isEditing: isInEditMode,
+          isInEditMode: isInEditMode,
           album: album,
-          onLongPress: () {
-            if (!isInEditMode) {
-              chooserBloc.setEditMode(true);
-            }
-          }),
+          onLongPress: _onLongPress),
       Container(
         height: 164, // Must be specified or renderer fails
         child: ListView.builder(
@@ -145,11 +142,7 @@ class _ChooserPageState extends State<ChooserPage> {
                   child: ChooserCard(
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
-                    onLongPress: () {
-                      if (!isInEditMode) {
-                        chooserBloc.setEditMode(true);
-                      }
-                    },
+                    onLongPress: _onLongPress,
                     onTap: () =>
                         print('puzzle ${album.puzzles[index].name} tapped'),
                   ),
@@ -160,17 +153,23 @@ class _ChooserPageState extends State<ChooserPage> {
     ];
   }
 
+  void _onLongPress() {
+    if (!isInEditMode) {
+      Provider.of<ChooserBloc>(context, listen: false).setEditMode(true);
+    }
+  }
+
   Widget _buildAppBarEditActions() {
     return AppBar(
       leading: IconButton(
         iconSize: 40.0,
         icon: Icon(Icons.cancel),
         onPressed: () =>
-            BlocProvider.of<ChooserBloc>(context).setEditMode(false),
+            BlocProvider.of<ChooserBloc>(context, listen: false).setEditMode(false),
       ),
       backgroundColor: Colors.green[100],
       actions: AppBarActions.buildAppBaEditActions(
-          BlocProvider.of<ChooserBloc>(context)),
+          BlocProvider.of<ChooserBloc>(context, listen:false)),
     );
   }
 
@@ -181,7 +180,7 @@ class _ChooserPageState extends State<ChooserPage> {
       backgroundColor: Colors.amber[100],
       elevation: 0.0,
       actions: AppBarActions.buildAppBarStandardActions(
-          BlocProvider.of<ChooserBloc>(context)),
+          BlocProvider.of<ChooserBloc>(context, listen:false)),
     );
   }
 }

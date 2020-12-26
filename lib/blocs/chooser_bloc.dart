@@ -97,6 +97,11 @@ class ChooserBloc extends Cubit<List<Album>> {
     getAlbums();
   }
 
+  Future<void> updateAlbumName(String oldName, String newName) async {
+    await Repository.updateAlbumName(oldName, newName);
+    getAlbums();
+  }
+
   /// Reset the application: drop and create database and image storage file
   /// directories and load seed albums from assets.
   Future<void> applicationReset() async {
