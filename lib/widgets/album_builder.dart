@@ -70,21 +70,21 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
       padding: const EdgeInsets.all(32.0),
       child: Builder(builder: (context) {
         if ((!widget.album.isSelectable) || (!widget.isInEditMode)) {
-          return generateText();
+          return _generateText();
         } else if (editMode == EditMode.IsEditingNotSelf) {
-          return generateText();
+          return _generateText();
         } else if (editMode == EditMode.NobodyEditing) {
           return Row(
             children: [
-              generateCheckBox(),
-              generateText(),
-              generateEditHandler(),
+              _generateCheckBox(),
+              _generateText(),
+              _generateEditHandler(),
             ],
           );
         } else if (editMode == EditMode.IsEditingSelf) {
           return Row(children: [
-            generateTextField(),
-            generateCancelHandler(),
+            _generateTextField(),
+            _generateCancelHandler(),
           ]);
         } else {
           throw Exception('Unexpected edit mode $editMode');
@@ -93,7 +93,7 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
     );
   }
 
-  Widget generateCancelHandler() {
+  Widget _generateCancelHandler() {
     return Padding(
       padding: const EdgeInsets.only(left: 16.0),
       child: IconButton(
@@ -104,7 +104,7 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
     );
   }
 
-  Widget generateCheckBox() {
+  Widget _generateCheckBox() {
     final ChooserBloc bloc = Provider.of<ChooserBloc>(context, listen: true);
     return Padding(
         padding: const EdgeInsets.only(right: 16.0),
@@ -114,7 +114,7 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
                 bloc.toggleDeleteAlbum(widget.album, newValue)));
   }
 
-  Widget generateEditHandler() {
+  Widget _generateEditHandler() {
     final ChooserBloc bloc = Provider.of<ChooserBloc>(context);
     return Padding(
       padding: const EdgeInsets.only(left: 16.0),
@@ -126,7 +126,7 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
     );
   }
 
-  Padding generateText() {
+  Padding _generateText() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: InkWell(
@@ -135,7 +135,7 @@ class _AlbumBuilderState extends State<AlbumBuilder> {
     );
   }
 
-  Widget generateTextField() {
+  Widget _generateTextField() {
     _teController.text = widget.album.name;
     _teController.selection =
         TextSelection(baseOffset: 0, extentOffset: widget.album.name.length);

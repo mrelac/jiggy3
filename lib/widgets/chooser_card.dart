@@ -5,7 +5,6 @@ import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/blocs/editing_name_bloc.dart';
-import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/pages/chooser_page.dart';
 import 'package:provider/provider.dart';
 
@@ -126,7 +125,6 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
   void _endEditing() {
     _editingNameFocusNode.unfocus();
     _teController.text = widget.name;
-    // widget.bloc.editingNameRequest(null);
     Provider.of<ChooserBloc>(context, listen: false).editingNameRequest(null);
   }
 
@@ -181,14 +179,14 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
     final ChooserBloc bloc = Provider.of<ChooserBloc>(
       context,
     );
-    Puzzle puzzle = Puzzle(id: widget.id, name: widget.name);
     return Container(
       alignment: Alignment.topLeft,
       height: checkboxHeight,
       width: CARD_WIDTH,
       child: Checkbox(
           value: bloc.isPuzzleMarkedForDelete(widget.id),
-          onChanged: (newValue) => bloc.toggleDeletePuzzle(puzzle, newValue)),
+          onChanged: (newValue) =>
+              bloc.toggleDeletePuzzle(widget.id, widget.name, newValue)),
     );
   }
 
@@ -255,6 +253,7 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
       child: IconButton(
         iconSize: iconSize,
         icon: Image.memory(widget.thumb),
+        onPressed: null,
       ),
     );
   }

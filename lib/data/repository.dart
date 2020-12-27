@@ -68,18 +68,18 @@ class Repository {
   /// Create new puzzle from puzzle.name and puzzle.imageLocation, copy image
   /// to device storage, fill out remainder of Puzzle fields, and add puzzle to
   /// database.
-  static Future<Puzzle> createPuzzle(Puzzle puzzle) async {
+  static Future<Puzzle> createPuzzle(String name, String imageLocation) async {
     Uint8List sourceBytes =
-        await ChooserService.readImageBytesFromLocation(puzzle.imageLocation);
-    String targetLocation =
-        await JiggyFilesystem.createTargetImagePath(puzzle.name);
+        await ChooserService.readImageBytesFromLocation(imageLocation);
+    String targetLocation = await JiggyFilesystem.createTargetImagePath(name);
     Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
     await JiggyFilesystem.imageBytesSave(sourceBytes, File(targetLocation));
-    puzzle
-      ..thumb = ImageService.resizeBytes(sourceBytes, THUMB_WIDTH)
-      ..imageLocation = targetLocation
-      ..imageWidth = size.width
-      ..imageHeight = size.height;
+    final puzzle = Puzzle(
+        name: name,
+        imageLocation: targetLocation,
+        thumb: ImageService.resizeBytes(sourceBytes, THUMB_WIDTH),
+        imageHeight: size.height,
+        imageWidth: size.width);
     await DBProvider.db.insertPuzzle(puzzle);
     return puzzle;
   }

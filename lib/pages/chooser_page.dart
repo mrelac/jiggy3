@@ -16,7 +16,6 @@ const ARG_RESET =
     String.fromEnvironment('applicationReset', defaultValue: 'false');
 
 // TODO - Bugs
-// - Implement DeleteItems
 // - Implement AddAlbum
 // - Implement AddPuzzle
 // - Implement move puzzle
@@ -49,8 +48,8 @@ class _ChooserPageState extends State<ChooserPage> {
     if (applicationResetRequested) {
       BlocProvider.of<ChooserBloc>(context).applicationReset();
     }
-    _appBarEdit = _buildAppBarEditActions();
-    _appBarStandard = _buildAppBarStandardActions();
+    _appBarEdit = buildAppBarEditActions();
+    _appBarStandard = buildAppBarStandardActions();
     _appBar = _appBarStandard;
     BlocProvider.of<ChooserBloc>(context).setEditMode(false);
     BlocProvider.of<ChooserBloc>(context, listen: false).editModeStream.listen(
@@ -64,17 +63,24 @@ class _ChooserPageState extends State<ChooserPage> {
 
   @override
   Widget build(BuildContext context) {
-    ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
+    ChooserBloc bloc = Provider.of<ChooserBloc>(context);
+    bloc.albumsStream.listen((event) {
+      _appBarEdit = buildAppBarEditActions();
+      _appBarStandard = buildAppBarStandardActions();
+      setState(() {
+        _appBar = isInEditMode ? _appBarEdit : _appBarStandard;
+      });
+    });
+
     SystemChrome.setEnabledSystemUIOverlays([]); // Hide status bars and such
 
     return Scaffold(
       appBar: _appBar,
       body: Material(
         child: StreamBuilder<List<Album>>(
-            stream: chooserBloc.albumsStream,
+            stream: bloc.albumsStream,
             builder: (context, snapshot) {
-              if ((snapshot.hasData) &&
-                  (!chooserBloc.isApplicationResetting())) {
+              if ((snapshot.hasData) && (!bloc.isApplicationResetting())) {
                 return Container(
                     child: CustomScrollView(
                   slivers: <Widget>[
@@ -85,7 +91,7 @@ class _ChooserPageState extends State<ChooserPage> {
                   ],
                 ));
               }
-              return BusyIndicator(chooserBloc.progress);
+              return BusyIndicator(bloc.progress);
             }),
       ),
     );
@@ -103,11 +109,11 @@ class _ChooserPageState extends State<ChooserPage> {
 
   /// Each album is expected to have its complete list of puzzles.
   List<Widget> _buildAlbumAndPuzzles(Album album) {
-    ChooserBloc chooserBloc = Provider.of<ChooserBloc>(context);
     return [
       AlbumBuilder(
           isInEditMode: isInEditMode, album: album, onLongPress: _onLongPress),
       Container(
+        padding: EdgeInsets.only(left: 8.0),
         height: 164, // Must be specified or renderer fails
         child: ListView.builder(
             scrollDirection: Axis.horizontal,
@@ -148,8 +154,10 @@ class _ChooserPageState extends State<ChooserPage> {
     }
   }
 
-  Widget _buildAppBarEditActions() {
+  Widget buildAppBarEditActions() {
     return AppBar(
+      centerTitle: true,
+      title: Text(widget.title),
       leading: IconButton(
         iconSize: 40.0,
         icon: Icon(Icons.cancel),
@@ -162,10 +170,10 @@ class _ChooserPageState extends State<ChooserPage> {
     );
   }
 
-  Widget _buildAppBarStandardActions() {
+  Widget buildAppBarStandardActions() {
     return AppBar(
       centerTitle: true,
-      title: Text("Jiggy!"),
+      title: Text(widget.title),
       backgroundColor: Colors.amber[100],
       elevation: 0.0,
       actions: AppBarActions.buildAppBarStandardActions(

@@ -90,6 +90,9 @@ class ChooserBloc extends Cubit<List<Album>> {
           'Deleting puzzle "${puzzle.name}"', currentIndex / itemCount);
       await Repository.deletePuzzle(puzzleId);
     }
+    _albumsMarkedForDelete.clear();
+    _puzzlesMarkedForDelete.clear();
+    await getAlbums();
   }
 
   Future<void> updatePuzzleName(String oldName, String newName) async {
@@ -117,15 +120,15 @@ class ChooserBloc extends Cubit<List<Album>> {
         progress = Progress(
             'Creating puzzle "${puzzle.name}" in album "${album.name}"',
             currentPuzzleIndex / puzzleCount);
-        await Repository.createPuzzle(puzzle);
+        puzzle =
+            await Repository.createPuzzle(puzzle.name, puzzle.imageLocation);
         await Repository.bindAlbumAndPuzzle(album.id, puzzle.id);
         _albumsStream.sink.add([album]);
         currentPuzzleIndex++;
       }
     }
-
+    await getAlbums();
     _applicationResetting = false;
-    getAlbums();
   }
 
   /// Create new, empty Album from name, add to database, and refresh album list.
@@ -140,8 +143,7 @@ class ChooserBloc extends Cubit<List<Album>> {
   /// to device storage, fill out remainder of Puzzle fields, and add puzzle to
   /// database.
   void createPuzzle(String name, String imageLocation) async {
-    Puzzle newPuzzle = await Repository.createPuzzle(
-        Puzzle(name: name, imageLocation: imageLocation));
+    Puzzle newPuzzle = await Repository.createPuzzle(name, imageLocation);
     Album all = await Repository.getAlbumAll();
     all.puzzles.insert(0, newPuzzle);
     _albumsStream.sink.add([all]);
@@ -180,12 +182,12 @@ class ChooserBloc extends Cubit<List<Album>> {
     return _puzzlesMarkedForDelete.contains(id);
   }
 
-  void toggleDeletePuzzle(Puzzle puzzle, bool shouldDelete) {
+  void toggleDeletePuzzle(int puzzleId, String name, bool shouldDelete) {
     shouldDelete
-        ? _puzzlesMarkedForDelete.add(puzzle.id)
-        : _puzzlesMarkedForDelete.remove(puzzle.id);
+        ? _puzzlesMarkedForDelete.add(puzzleId)
+        : _puzzlesMarkedForDelete.remove(puzzleId);
 
-    print('toggleDeletePuzzle "${puzzle.name}": new value: $shouldDelete');
+    print('toggleDeletePuzzle "${name}": new value: $shouldDelete');
     _albumsStream.sink.add(_albumCache);
   }
 

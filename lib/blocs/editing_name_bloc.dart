@@ -15,7 +15,6 @@ class EditingNameBloc {
     }
   }
 
-  // FIXME FIXME FIXME Can we get rid of originalValue parameter?
   void update(String originalValue, String newText) {
     if (newText == null || newText.isEmpty) {
       _textStreamController.sink.addError('Please enter a value.');
@@ -34,8 +33,6 @@ class EditingNameBloc {
   }
 
   dispose() {
-    // FIXME FIXME FIXME
-    print('EditingNameBloc: DISPOSING...');
     _textStreamController.close();
   }
 }
