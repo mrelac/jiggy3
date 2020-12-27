@@ -16,16 +16,12 @@ const ARG_RESET =
     String.fromEnvironment('applicationReset', defaultValue: 'false');
 
 // TODO - Bugs
-// - Make textfield widget keys unique so only one widget is edited at a time
-// - Refactor delete checkbox to EditingNameBloc and fix it
 // - Implement DeleteItems
-// - Implement edit album name
 // - Implement AddAlbum
 // - Implement AddPuzzle
 // - Implement move puzzle
-// - Figure out how to display entire textfield error message
 // - Figure out how to get keyboard to NOT cover editing textfield
-// - Append date to puzzleImage, as the puzzle name can change
+// - Append date to puzzleImage file, as the puzzle name can change
 //
 
 /// The ChooserPage is where puzzles can be browsed and selected to play.
@@ -126,10 +122,6 @@ class _ChooserPageState extends State<ChooserPage> {
                     albumName: album.name,
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
-                    isDeleteTicked: chooserBloc
-                        .isPuzzleMarkedForDelete(album.puzzles[index].id),
-                    onDeleteToggle: (newValue) => chooserBloc
-                        .toggleDeletePuzzle(album.puzzles[index], newValue),
                   ),
                 );
               } else {

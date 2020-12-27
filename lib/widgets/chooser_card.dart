@@ -71,16 +71,12 @@ class ChooserCardEditing extends StatefulWidget {
   final int id;
   final String name;
   final Uint8List thumb;
-  final bool isDeleteTicked;
-  final OnDeleteToggled onDeleteToggle;
 
   ChooserCardEditing({
     @required this.albumName,
     @required this.id,
     @required this.name,
     @required this.thumb,
-    @required this.isDeleteTicked,
-    @required this.onDeleteToggle,
   });
 
   _ChooserCardEditingState createState() => _ChooserCardEditingState();
@@ -219,10 +215,8 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
         TextSelection(baseOffset: 0, extentOffset: widget.name.length);
     final ChooserBloc bloc = Provider.of<ChooserBloc>(context);
     return SizedBox(
-      // height: 70.0,
-      width: 200.0,
+      width: 250.0,
       child: Container(
-        // padding: const EdgeInsets.only(top: 0.0),
         child: StreamBuilder<String>(
             stream: _enBloc.textStream,
             builder: (context, textStream) {
