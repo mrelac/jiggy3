@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
 
 class AppBarActions {
@@ -32,8 +33,7 @@ class AppBarActions {
         child: IconButton(
           iconSize: 40,
           icon: Icon(Icons.add_to_photos),
-          // TODO - Create new album
-          // onPressed: () => _addNewAlbum(),
+          onPressed: () async => await bloc.createAlbum(),
         ),
       ),
     );
@@ -47,8 +47,12 @@ class AppBarActions {
         child: IconButton(
           iconSize: 40,
           icon: Icon(Icons.add_photo_alternate),
-          // TODO - Create new album
-          // onPressed: () => _addNewPuzzle()
+          onPressed: () async {
+            final pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
+            if (pickedFile != null) {
+              await bloc.createPuzzle(pickedFile.path);
+            }
+          },
         ),
       ),
     );

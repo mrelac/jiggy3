@@ -144,8 +144,11 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
               children: [
                 generateCheckBox(),
                 generateThumb(),
-                Row(
-                  children: [generateText(), generateEditHandler()],
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Row(
+                    children: [generateText(), generateEditHandler()],
+                  ),
                 ),
               ],
             );

@@ -7,6 +7,10 @@ import 'package:jiggy3/data/database.dart';
 import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
+import 'package:jiggy3/services/chooser_service.dart';
+
+const DEFAULT_ALBUM_NAME_PREFIX = 'New Album';
+const DEFAULT_PUZZLE_NAME_PREFIX = 'New Puzzle';
 
 class ChooserBloc extends Cubit<List<Album>> {
   static bool _applicationResetting = false;
@@ -131,25 +135,40 @@ class ChooserBloc extends Cubit<List<Album>> {
     _applicationResetting = false;
   }
 
-  /// Create new, empty Album from name, add to database, and refresh album list.
-  void createAlbum(String name) async {
-    Album newAlbum = Album(name: name);
+  /// Create a new album with name, if specified, or with a new, automatically
+  /// generated name if it is null. Add it to the database, cache, and sink.
+  Future<void> createAlbum({String name}) async {
+    Album newAlbum = Album(
+        name: name ??
+            ChooserService.generateUniqueName(
+                DEFAULT_ALBUM_NAME_PREFIX, getAlbumNames()));
     await Repository.createAlbum(newAlbum);
     _albumCache.add(newAlbum);
-    _albumsStream.sink.add([newAlbum]);
+    _albumNames.add(newAlbum.name);
+    _albumsStream.sink.add(_albumCache);
   }
 
-  /// Create new puzzle from puzzle.name and puzzle.imageLocation, copy image
-  /// to device storage, fill out remainder of Puzzle fields, and add puzzle to
-  /// database.
-  void createPuzzle(String name, String imageLocation) async {
-    Puzzle newPuzzle = await Repository.createPuzzle(name, imageLocation);
+  /// Create a new puzzle with name, if specified, or with a new, automatically
+  /// generated name if it is null, and the image location (typically a path to
+  /// a temporary file). Copy image to device storage, fill out remainder of
+  /// Puzzle fields, and add the puzzle to the database.
+  Future<void> createPuzzle(String imageLocation, {String name}) async {
+    await Repository.createPuzzle(
+        name ??
+            ChooserService.generateUniqueName(
+                DEFAULT_PUZZLE_NAME_PREFIX, getPuzzleNames()),
+        imageLocation);
     Album all = await Repository.getAlbumAll();
-    all.puzzles.insert(0, newPuzzle);
-    _albumsStream.sink.add([all]);
+    await getAlbums();
+    _albumCache
+        .firstWhere((album) => album.name == Repository.ALBUM_ALL)
+        .puzzles
+      ..clear()
+      ..addAll(all.puzzles);
+    _albumsStream.sink.add(_albumCache);
   }
 
-// TODO - addPuzzleToAlbum()
+  // TODO - addPuzzleToAlbum()
   /// Bind the puzzle to the album.
   void addPuzzleToAlbum(
       {@required Puzzle puzzle, @required Album album}) async {}

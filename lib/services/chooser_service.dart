@@ -27,7 +27,18 @@ class ChooserService {
   }
 
   static void printTime(String prefix, [DateTime date]) {
-    final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(date ?? DateTime.now());
+    final formattedDate =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(date ?? DateTime.now());
     print('$prefix: $formattedDate');
+  }
+
+  static String generateUniqueName(String prefix, List<String> excludedNames) {
+    prefix = prefix ?? 'New';
+    int i = 1;
+    String name = '${prefix} ' + i.toString();
+    while (excludedNames.contains(name)) {
+      name = '${prefix} ' + (++i).toString();
+    }
+    return name;
   }
 }

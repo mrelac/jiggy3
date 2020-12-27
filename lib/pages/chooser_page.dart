@@ -16,8 +16,6 @@ const ARG_RESET =
     String.fromEnvironment('applicationReset', defaultValue: 'false');
 
 // TODO - Bugs
-// - Implement AddAlbum
-// - Implement AddPuzzle
 // - Implement move puzzle
 // - Figure out how to get keyboard to NOT cover editing textfield
 // - Append date to puzzleImage file, as the puzzle name can change
@@ -103,7 +101,6 @@ class _ChooserPageState extends State<ChooserPage> {
   List<Widget> _buildAlbumsAndPuzzles(List<Album> albums) {
     final wlist = <Widget>[];
     albums.forEach((album) => wlist.addAll(_buildAlbumAndPuzzles(album)));
-
     return wlist;
   }
 
@@ -121,6 +118,7 @@ class _ChooserPageState extends State<ChooserPage> {
             itemBuilder: (BuildContext context, int index) {
               if (isInEditMode) {
                 return Container(
+                  padding: EdgeInsets.only(left: 8.0),
                   key: Key('$index'),
                   color: Colors.orange[50],
                   child: ChooserCardEditing(

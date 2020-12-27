@@ -18,7 +18,9 @@ class Album {
     this.name,
     this.puzzles,
     this.isSelectable: true,
-  });
+  }) {
+    if (this.puzzles == null) this.puzzles = <Puzzle>[];
+  }
 
   Album.fromMap(Map jsonMap)
       : assert(jsonMap['name'] != null),
