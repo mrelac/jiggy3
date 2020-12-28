@@ -73,7 +73,7 @@ class Repository {
         await ChooserService.readImageBytesFromLocation(imageLocation);
     String targetLocation = await JiggyFilesystem.createTargetImagePath(name);
     Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
-    await JiggyFilesystem.imageBytesSave(sourceBytes, File(targetLocation));
+    await JiggyFilesystem.bytesImageSave(sourceBytes, File(targetLocation));
     final puzzle = Puzzle(
         name: name,
         imageLocation: targetLocation,
@@ -90,7 +90,7 @@ class Repository {
   static Future<void> deletePuzzle(int puzzleId) async {
     Puzzle puzzle = await DBProvider.db.getPuzzleById(puzzleId);
     if (puzzle != null) {
-      await JiggyFilesystem.imageFileDelete(File(puzzle.imageLocation));
+      await JiggyFilesystem.fileImageDelete(File(puzzle.imageLocation));
     }
     await DBProvider.db.deletePuzzle(puzzleId);
   }
@@ -111,8 +111,9 @@ class Repository {
   /// directories and return a list of asset albums with puzzles.
   static Future<List<Album>> applicationResetEnvironment() async {
     await DBProvider.db.deleteJiggyDatabase();
-    await JiggyFilesystem.appImagesDirectoryDelete();
-    await JiggyFilesystem.appImagesDirectoryCreate();
+    await JiggyFilesystem.directoryImagesDelete();
+    await JiggyFilesystem.directoryPicturesDelete();
+    await JiggyFilesystem.directoryImagesCreate();
     String jsonStr = await rootBundle.loadString(ASSETS_PATH);
     List<dynamic> jsonData = jsonDecode(jsonStr);
     final albums = <Album>[];

@@ -18,7 +18,6 @@ const ARG_RESET =
 // TODO - Bugs
 // - Implement move puzzle
 // - Figure out how to get keyboard to NOT cover editing textfield
-// - Append date to puzzleImage file, as the puzzle name can change
 //
 
 /// The ChooserPage is where puzzles can be browsed and selected to play.
