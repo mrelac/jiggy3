@@ -1,4 +1,4 @@
-import 'dart:html';
+import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -7,14 +7,16 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/chooser_bloc.dart';
+import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/album.dart';
+import 'package:jiggy3/models/puzzle.dart';
+import 'package:jiggy3/pages/play_page.dart';
 import 'package:jiggy3/widgets/album_builder.dart';
 import 'package:jiggy3/widgets/appbar_actions.dart';
 import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/chooser_card.dart';
+import 'package:jiggy3/widgets/new_puzzle_setup_page.dart';
 import 'package:provider/provider.dart';
-
-import 'package:reorderables/reorderables.dart';
 
 const ARG_RESET =
     String.fromEnvironment('applicationReset', defaultValue: 'false');
@@ -65,10 +67,14 @@ class _ChooserPageState extends State<ChooserPage> {
     return BlocProvider.of<ChooserBloc>(context, listen: false).isInEditMode;
   }
 
+  StreamSubscription _albumStreamSub;
   @override
   Widget build(BuildContext context) {
     ChooserBloc bloc = Provider.of<ChooserBloc>(context);
-    bloc.albumsStream.listen((event) {
+    if (_albumStreamSub != null) {
+      _albumStreamSub.cancel();
+    }
+    _albumStreamSub = bloc.albumsStream.listen((event) {
       _appBarEdit = buildAppBarEditActions();
       _appBarStandard = buildAppBarStandardActions();
       setState(() {
@@ -142,14 +148,62 @@ class _ChooserPageState extends State<ChooserPage> {
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
                     onLongPress: _onLongPress,
-                    onTap: () =>
-                        print('puzzle ${album.puzzles[index].name} tapped'),
+                    onTap: () async {
+                      if ((album.puzzles[index].playState ==
+                              PlayState.neverPlayed) ||
+                          (album.puzzles[index].playState ==
+                              PlayState.completed)) {
+                        await _navigateToNewPuzzleSetupPage(
+                            (album.puzzles[index]));
+                      } else if (album.puzzles[index].playState ==
+                          PlayState.inProgress) {
+                        await _navigateToPlayPage(album.puzzles[index]);
+                      }
+                    },
                   ),
                 );
               }
             }),
       ),
     ];
+  }
+
+  Future<void> _navigateToNewPuzzleSetupPage(Puzzle puzzle) async {
+    SystemChrome.setEnabledSystemUIOverlays([]);
+
+    Puzzle update = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (BuildContext context) => PuzzleBloc(puzzle),
+          child: NewPuzzleSetupPage(puzzle: puzzle),
+        ),
+      ),
+    );
+
+    // Update contains the changed puzzle, or null if the puzzle didn't change.
+    if (update != null) {
+      print('Returned from NewPuzzleSetupPage. Puzzle = $update');
+      // TODO - Update PuzzleCard
+      // _counterBloc.setCounter(update);
+    }
+  }
+
+  Future<void> _navigateToPlayPage(Puzzle puzzle) async {
+    SystemChrome.setEnabledSystemUIOverlays([]);
+    Puzzle update = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (BuildContext context) => PuzzleBloc(puzzle),
+          child: PlayPage(puzzle),
+        ),
+      ),
+    );
+
+    // Update contains the changed puzzle, or null if the puzzle didn't change.
+    if (update != null) {
+      // TODO - Update PuzzleCard with latest locked/total pieces
+      // _counterBloc.setCounter(update);
+    }
   }
 
   void _onLongPress() {

@@ -180,6 +180,47 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     }
   }
 
+  // FIXME FIXME FIXME
+//   Future<void> updatePuzzleThumb(Uint8List thumb) async {
+//     final db = await database;
+//     const String update = '''
+// UPDATE puzzle SET image_location = ?, image_width = ?, image_height = ?,
+//
+//   (name, thumb, image_location, image_width, image_height,
+//    image_colour_r, image_colour_g, image_colour_b,
+//    image_opacity, max_pieces)
+// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// ''';
+//     int count = await db.rawUpdate(update, [newName, oldName]);
+//     if (count > 0) {
+//       print('Updated puzzle "$oldName" to "$newName"');
+//     }
+//   }
+
+//   Future<void> insertPuzzle(Puzzle puzzle) async {
+//     final db = await database;
+//     const String insert = '''
+// INSERT INTO puzzle
+//   (name, thumb, image_location, image_width, image_height,
+//    image_colour_r, image_colour_g, image_colour_b,
+//    image_opacity, max_pieces)
+// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// ''';
+//     print('Inserting puzzle ${puzzle.name}');
+//     puzzle.id = await db.rawInsert(insert, [
+//       puzzle.name,
+//       base64Encode(puzzle.thumb),
+//       puzzle.imageLocation,
+//       puzzle.imageWidth,
+//       puzzle.imageHeight,
+//       puzzle.imageColour.red,
+//       puzzle.imageColour.green,
+//       puzzle.imageColour.blue,
+//       puzzle.imageOpacity,
+//       puzzle.maxPieces
+//     ]);
+//   }
+
   /// Return a list of jsonPuzzle entries matching albumId. An empty puzzle list
   /// is returned if there are no bound puzzles.
   Future<List<Puzzle>> getPuzzlesByAlbumId(int albumId) async {

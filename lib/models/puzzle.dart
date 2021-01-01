@@ -3,6 +3,8 @@ import 'dart:core';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:jiggy3/data/repository.dart';
+import 'package:jiggy3/models/puzzle_piece.dart';
 
 //enum PlayState { neverPlayed, inProgress, completed, notPlayable }
 
@@ -20,34 +22,46 @@ class Puzzle {
   double imageHeight;
   Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, IMAGE_OPACITY_CLEAR);
   double imageOpacity = IMAGE_OPACITY_CLEAR;
-  int maxPieces = -1;   // # of pieces locked to win game. -1 means 'Not yet started'
+  // # of pieces locked to win game. -1 means 'Game not yet started'.
+  int maxPieces = -1;
 
   bool get isPortrait => imageHeight < imageWidth;
 
-  static const double IMAGE_OPACITY_CLEAR = 1.0;
+  FileImage get fileImage => image.image as FileImage;
 
-  Puzzle({
-    this.id,
-    @required this.name,
-    @required this.thumb,
-    @required this.imageLocation,
-    @required this.imageWidth,
-    @required this.imageHeight,
-    imageColour,
-    imageOpacity,
-    maxPieces}) {
-    if (imageColour != null)
-      this.imageColour = imageColour;
-    if (imageOpacity != null)
-      this.imageOpacity = imageOpacity;
-    if (maxPieces != null)
-      this.maxPieces = maxPieces;
+  Image _image;
+
+  Image get image {
+    if (_image == null) {
+      _image =
+          Repository.getPuzzleImage(imageLocation, imageHeight, imageWidth);
+    }
+    return _image;
   }
 
-  Puzzle.fromMap(Map json) :
-        assert(json['name'] != null),
-        assert(json['image_location'] != null),
+  static const double IMAGE_OPACITY_CLEAR = 1.0;
 
+  final piecesLocked = <PuzzlePiece>[]; // Correctly-placed pieces
+  final piecesLoose = <PuzzlePiece>[]; // Unplayed pieces
+
+  Puzzle(
+      {this.id,
+      @required this.name,
+      @required this.thumb,
+      @required this.imageLocation,
+      @required this.imageWidth,
+      @required this.imageHeight,
+      imageColour,
+      imageOpacity,
+      maxPieces}) {
+    if (imageColour != null) this.imageColour = imageColour;
+    if (imageOpacity != null) this.imageOpacity = imageOpacity;
+    if (maxPieces != null) this.maxPieces = maxPieces;
+  }
+
+  Puzzle.fromMap(Map json)
+      : assert(json['name'] != null),
+        assert(json['image_location'] != null),
         id = json['id'],
         name = json['name'],
         imageLocation = json['image_location'],
@@ -72,9 +86,9 @@ class Puzzle {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is Puzzle &&
-              runtimeType == other.runtimeType &&
-              name.toLowerCase() == other.name.toLowerCase();
+      other is Puzzle &&
+          runtimeType == other.runtimeType &&
+          name.toLowerCase() == other.name.toLowerCase();
 
   @override
   int get hashCode => name.hashCode;
@@ -85,4 +99,16 @@ class Puzzle {
         'imageWidth: $imageWidth, imageHeight: $imageHeight, '
         'maxPieces: $maxPieces}';
   }
+
+  PlayState get playState {
+    if (maxPieces == -1) {
+      return PlayState.neverPlayed;
+    } else if (piecesLocked.length == maxPieces) {
+      return PlayState.completed;
+    } else {
+      return PlayState.inProgress;
+    }
+  }
 }
+
+enum PlayState { neverPlayed, inProgress, completed, notPlayable }

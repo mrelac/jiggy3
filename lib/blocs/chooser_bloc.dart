@@ -7,7 +7,7 @@ import 'package:jiggy3/data/database.dart';
 import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
-import 'package:jiggy3/services/chooser_service.dart';
+import 'package:jiggy3/services/utils.dart';
 
 const DEFAULT_ALBUM_NAME_PREFIX = 'New Album';
 const DEFAULT_PUZZLE_NAME_PREFIX = 'New Puzzle';
@@ -140,7 +140,7 @@ class ChooserBloc extends Cubit<List<Album>> {
   Future<void> createAlbum({String name}) async {
     Album newAlbum = Album(
         name: name ??
-            ChooserService.generateUniqueName(
+            Utils.generateUniqueName(
                 DEFAULT_ALBUM_NAME_PREFIX, getAlbumNames()));
     await Repository.createAlbum(newAlbum);
     _albumCache.add(newAlbum);
@@ -155,7 +155,7 @@ class ChooserBloc extends Cubit<List<Album>> {
   Future<void> createPuzzle(String imageLocation, {String name}) async {
     await Repository.createPuzzle(
         name ??
-            ChooserService.generateUniqueName(
+            Utils.generateUniqueName(
                 DEFAULT_PUZZLE_NAME_PREFIX, getPuzzleNames()),
         imageLocation);
     Album all = await Repository.getAlbumAll();

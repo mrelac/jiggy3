@@ -134,7 +134,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
   }
 
-  void _navigateToSecondPage() async {
+  Future<void> _navigateToSecondPage() async {
     CounterBloc _counterBloc = Provider.of<CounterBloc>(context);
     int update = await Navigator.of(context).push(
       MaterialPageRoute(

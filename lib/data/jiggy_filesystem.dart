@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:jiggy3/services/chooser_service.dart';
+import 'package:jiggy3/services/utils.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -70,7 +70,7 @@ class JiggyFilesystem {
 
     final prefix = basenameWithoutExtension(name);
     final targetImagePath = await directoryImagesGet +
-        '/${ChooserService.createDateString(prefix: prefix)}.jpg';
+        '/${Utils.createDateString(prefix: prefix)}.jpg';
     return targetImagePath;
   }
 }

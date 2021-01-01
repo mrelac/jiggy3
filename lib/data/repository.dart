@@ -8,7 +8,6 @@ import 'package:flutter/widgets.dart';
 import 'package:jiggy3/data/jiggy_filesystem.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
-import 'package:jiggy3/services/chooser_service.dart';
 import 'package:jiggy3/services/image_service.dart';
 import 'package:jiggy3/utilities/image_utilities.dart';
 
@@ -70,7 +69,7 @@ class Repository {
   /// database.
   static Future<Puzzle> createPuzzle(String name, String imageLocation) async {
     Uint8List sourceBytes =
-        await ChooserService.readImageBytesFromLocation(imageLocation);
+        await ImageService.readImageBytesFromLocation(imageLocation);
     String targetLocation = await JiggyFilesystem.createTargetImagePath(name);
     Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
     await JiggyFilesystem.bytesImageSave(sourceBytes, File(targetLocation));
@@ -103,9 +102,15 @@ class Repository {
     return await DBProvider.db.getPuzzlesByAlbumId(albumId);
   }
 
+  static Image getPuzzleImage(String location, double height, double width) {
+    return Image.file(File(location), width: width, height: height);
+  }
+
   static Future<void> updatePuzzleName(String oldName, String newName) async {
     await DBProvider.db.updatePuzzleName(oldName, newName);
   }
+
+  static Future<void> updatePuzzleImage() async {}
 
   /// Reset the application: drop and create database and image storage file
   /// directories and return a list of asset albums with puzzles.
