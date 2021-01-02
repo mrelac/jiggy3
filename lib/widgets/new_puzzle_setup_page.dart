@@ -7,6 +7,7 @@ import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/services/image_service.dart';
+import 'package:jiggy3/services/puzzle_service.dart';
 import 'package:jiggy3/services/utils.dart';
 
 // NOTES: This page provides the player a place to:
@@ -51,6 +52,8 @@ class NewPuzzleSetupPage extends StatefulWidget {
 class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   final _maxPiecesChoices = <int>[
     1, 2, 3, 4, 5, 8, 12, 50, 77, 96, 140, 200, 234, 336, 400, 432, 512, 756, 1024,
+
+    // 2, 6, 12, 48, 70, 88, 140, 200, 234, 336, 400, 432, 512, 756, 1024,
   ];
   File _croppedImageFile;
   int _maxPieces;
@@ -135,24 +138,58 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   }
 
   Future<void> _onPlayPressed() async {
-    ChooserBloc chooserBloc = BlocProvider.of<ChooserBloc>(context);
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
+
+    // If crop
+    //   copy cropped image to device storage
+    //   update _returnedPuzzle with new imageLocation, thumb, imageWidth, and imageSize
+    //   delete old image on device
+    // Update _returnedPuzzle.maxPieces
+    // Split image into pieces
+    // return _returnedPuzzle
+
+    Puzzle wp = widget.puzzle;
+    // Update _returned Puzzle as appropriate and save to database.
+    _returnedPuzzle = wp.from;
+    _returnedPuzzle.maxPieces = _maxPieces;
     if (_croppedImageFile != null) {
-      String newName = Utils.generateUniqueName(widget.puzzle.name, chooserBloc.getPuzzleNames());
-      chooserBloc.createPuzzle(_croppedImageFile.path, name: newName);
-      _returnedPuzzle = await Repository.getPuzzleByName(newName);
-    } else {
-      _returnedPuzzle = widget.puzzle.from;
-      _returnedPuzzle.maxPieces = _maxPieces;
-      await puzzleBloc.updatePuzzle(_returnedPuzzle.id, maxPieces: _maxPieces);
+      Puzzle p = await puzzleBloc.createPuzzle(wp.name, _croppedImageFile.path);
+      await puzzleBloc.deletePuzzleImage(wp.imageLocation);
+      _returnedPuzzle
+        ..imageLocation = p.imageLocation
+        ..thumb = p.thumb
+        ..imageWidth = p.imageWidth
+        ..imageHeight = p.imageHeight;
+
+      await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
+      imageLocation: _returnedPuzzle.imageLocation,
+      thumb: _returnedPuzzle.thumb,
+      imageWidth: _returnedPuzzle.imageWidth,
+      imageHeight: _returnedPuzzle.imageHeight);
     }
 
+    _returnedPuzzle.piecesLoose
+      ..clear()
+      ..addAll(
+          await PuzzleService.splitImageIntoPieces(
+            image: _returnedPuzzle.image,
+            imageHeight: _returnedPuzzle.imageHeight,
+            imageWidth: _returnedPuzzle.imageWidth,
+            numPieces: _returnedPuzzle.maxPieces,
+            deviceSize: MediaQuery.of(context).size
+          ));
+
+    await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
+        maxPieces: _returnedPuzzle.piecesLoose.length);
+
+    print('piecesLoose count: ${_returnedPuzzle.piecesLoose.length}');
 
 
-    _returnedPuzzle = widget.puzzle;
+    // FIXME TODO: INSERT piecesLoose INTO DATABASE!
+
+
+
     _onWillPop();
-    // File croppedImageFile;
-    // if (_cropRequested.value) {
   }
 
   Widget _textButton(String text, IconData iconData, Function onPressed) {

@@ -50,7 +50,7 @@ class AppBarActions {
           onPressed: () async {
             final pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
             if (pickedFile != null) {
-              await bloc.createPuzzle(pickedFile.path);
+              await bloc.createAndInsertPuzzle(pickedFile.path);
             }
           },
         ),

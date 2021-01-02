@@ -67,4 +67,12 @@ class PuzzleBloc extends Cubit<Puzzle> {
         imageOpacity: imageOpacity,
         maxPieces: maxPieces);
   }
+
+  Future<Puzzle> createPuzzle(String name, String imageLocation) async {
+    return await Repository.createPuzzle(name, imageLocation);
+  }
+
+  Future<void> deletePuzzleImage(String location) async {
+    await Repository.deletePuzzleImage(location);
+  }
 }

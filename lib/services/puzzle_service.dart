@@ -4,18 +4,18 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as imglib;
-import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
 
 import 'image_service.dart';
 
 class PuzzleService {
-  static Future<List<PuzzlePiece>> splitImageIntoPieces(
-      Puzzle puzzle, int numPieces, Size deviceSize) async {
+  // FIXME: This doesn't honor numPieces, instead creating a different number of pieces.
+  static Future<List<PuzzlePiece>> splitImageIntoPieces({
+      Image image, double imageWidth, double imageHeight, int numPieces, Size deviceSize}) async {
     var pieces = <PuzzlePiece>[];
 
-    Uint8List largeImageBytes = await ImageService.getImageBytes(puzzle.image);
-    Size largeImageSize = await ImageService.getImageSize(puzzle.image);
+    Uint8List largeImageBytes = await ImageService.getImageBytes(image);
+    Size largeImageSize = await ImageService.getImageSize(image);
     imglib.Image imglibOriginalBytes = imglib.decodeImage(largeImageBytes);
 
     double newHeight;
@@ -39,19 +39,19 @@ class PuzzleService {
         'TEST: smallImage size = $smallImageSize. byteCount = ${smallImageBytes.length}');
 
     int x = 0, y = 0;
-    Size colsAndRows = _computeNumRowsAndCols(
-        numPieces, puzzle.imageWidth, puzzle.imageHeight);
+    Size colsAndRows =
+        _computeNumRowsAndCols(numPieces, imageWidth, imageHeight);
     int numCols = colsAndRows.width.toInt();
     int numRows = colsAndRows.height.toInt();
-    int width = (puzzle.image.width / numCols).floor();
-    int height = (puzzle.image.height / numRows).floor();
-    imglib.Image image = imglibSmallImage;
+    int width = (imageWidth / numCols).floor();
+    int height = (imageHeight / numRows).floor();
+    imglib.Image imglibImage = imglibSmallImage;
     List<imglib.Image> parts = List<imglib.Image>();
     for (int i = 0; i < numRows; i++) {
       for (int j = 0; j < numCols; j++) {
 //print('x: $x, y: $y, width: $width, height: $height');
         try {
-          parts.add(imglib.copyCrop(image, x, y, width, height));
+          parts.add(imglib.copyCrop(imglibImage, x, y, width, height));
         } catch (e) {
           break;
         }

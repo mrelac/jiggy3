@@ -124,8 +124,8 @@ class ChooserBloc extends Cubit<List<Album>> {
         progress = Progress(
             'Creating puzzle "${puzzle.name}" in album "${album.name}"',
             currentPuzzleIndex / puzzleCount);
-        puzzle =
-            await Repository.createPuzzle(puzzle.name, puzzle.imageLocation);
+        puzzle = await Repository.createAndInsertPuzzle(
+            puzzle.name, puzzle.imageLocation);
         await Repository.bindAlbumAndPuzzle(album.id, puzzle.id);
         _albumsStream.sink.add([album]);
         currentPuzzleIndex++;
@@ -152,8 +152,9 @@ class ChooserBloc extends Cubit<List<Album>> {
   /// generated name if it is null, and the image location (typically a path to
   /// a temporary file). Copy image to device storage, fill out remainder of
   /// Puzzle fields, and add the puzzle to the database.
-  Future<void> createPuzzle(String imageLocation, {String name}) async {
-    await Repository.createPuzzle(
+  Future<void> createAndInsertPuzzle(String imageLocation,
+      {String name}) async {
+    await Repository.createAndInsertPuzzle(
         name ??
             Utils.generateUniqueName(
                 DEFAULT_PUZZLE_NAME_PREFIX, getPuzzleNames()),

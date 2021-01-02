@@ -127,7 +127,7 @@ SELECT a.* FROM album a
         .toList());
   }
 
-  Future<void> insertPuzzle(Puzzle puzzle) async {
+  Future<Puzzle> insertPuzzle(Puzzle puzzle) async {
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle
@@ -149,6 +149,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       puzzle.imageOpacity,
       puzzle.maxPieces
     ]);
+    return puzzle;
   }
 
   /// Deletes puzzle using puzzle id. Removes binding, if any, first.

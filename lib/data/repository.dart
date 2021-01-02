@@ -65,8 +65,8 @@ class Repository {
   }
 
   /// Create new puzzle from puzzle.name and puzzle.imageLocation, copy image
-  /// to device storage, fill out remainder of Puzzle fields, and add puzzle to
-  /// database.
+  /// to device storage, fill out remainder of Puzzle fields, and return the
+  /// puzzle. NOTE: Does NOT add the puzzle to the database.
   static Future<Puzzle> createPuzzle(String name, String imageLocation) async {
     Uint8List sourceBytes =
         await ImageService.readImageBytesFromLocation(imageLocation);
@@ -79,8 +79,16 @@ class Repository {
         thumb: ImageService.resizeBytes(sourceBytes, THUMB_WIDTH),
         imageHeight: size.height,
         imageWidth: size.width);
-    await DBProvider.db.insertPuzzle(puzzle);
     return puzzle;
+  }
+
+  /// Create new puzzle from puzzle.name and puzzle.imageLocation, copy image
+  /// to device storage, fill out remainder of Puzzle fields, and add puzzle to
+  /// database.
+  static Future<Puzzle> createAndInsertPuzzle(
+      String name, String imageLocation) async {
+    Puzzle puzzle = await createPuzzle(name, imageLocation);
+    return await DBProvider.db.insertPuzzle(puzzle);
   }
 
   /// Delete puzzle image from device storage and delete puzzle and binding,
@@ -89,7 +97,7 @@ class Repository {
   static Future<void> deletePuzzle(int puzzleId) async {
     Puzzle puzzle = await DBProvider.db.getPuzzleById(puzzleId);
     if (puzzle != null) {
-      await JiggyFilesystem.fileImageDelete(File(puzzle.imageLocation));
+      await deletePuzzleImage(puzzle.imageLocation);
     }
     await DBProvider.db.deletePuzzle(puzzleId);
   }
@@ -108,6 +116,10 @@ class Repository {
 
   static Image getPuzzleImage(String location, double height, double width) {
     return Image.file(File(location), width: width, height: height);
+  }
+
+  static Future<void> deletePuzzleImage(String location) async {
+    await JiggyFilesystem.fileImageDelete(File(location));
   }
 
   static Future<void> updatePuzzle(int id,
