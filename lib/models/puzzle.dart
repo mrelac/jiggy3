@@ -22,8 +22,11 @@ class Puzzle {
   double imageHeight;
   Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, IMAGE_OPACITY_CLEAR);
   double imageOpacity = IMAGE_OPACITY_CLEAR;
+
   // # of pieces locked to win game. -1 means 'Game not yet started'.
   int maxPieces = -1;
+  final piecesLocked = <PuzzlePiece>[]; // Correctly-placed pieces
+  final piecesLoose = <PuzzlePiece>[]; // Unplayed pieces
 
   bool get isPortrait => imageHeight < imageWidth;
 
@@ -40,9 +43,6 @@ class Puzzle {
   }
 
   static const double IMAGE_OPACITY_CLEAR = 1.0;
-
-  final piecesLocked = <PuzzlePiece>[]; // Correctly-placed pieces
-  final piecesLoose = <PuzzlePiece>[]; // Unplayed pieces
 
   Puzzle(
       {this.id,
@@ -81,6 +81,19 @@ class Puzzle {
           json['image_colour_b'],
           json['image_opacity'] ?? IMAGE_OPACITY_CLEAR);
     }
+  }
+
+  Puzzle get from {
+    return Puzzle(
+        id: this.id,
+        name: this.name,
+        thumb: this.thumb,
+        imageLocation: this.imageLocation,
+        imageWidth: this.imageWidth,
+        imageHeight: this.imageHeight,
+        imageColour: this.imageColour,
+        imageOpacity: this.imageOpacity,
+        maxPieces: this.maxPieces);
   }
 
   @override

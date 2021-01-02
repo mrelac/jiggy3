@@ -99,8 +99,8 @@ class ChooserBloc extends Cubit<List<Album>> {
     await getAlbums();
   }
 
-  Future<void> updatePuzzleName(String oldName, String newName) async {
-    await Repository.updatePuzzleName(oldName, newName);
+  Future<void> updatePuzzleName(int puzzleId, String newName) async {
+    await Repository.updatePuzzle(puzzleId, name: newName);
     getAlbums();
   }
 

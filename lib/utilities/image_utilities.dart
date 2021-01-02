@@ -199,17 +199,17 @@ class ImageUtils {
 
     return bytes;
   }
-
-  // Usage: newImage = await ImageUtils.cropImage(newImage);
-  /// Returns null if user canceled crop request
-  static Future<File> cropImageDialog(File imageFile) async {
-    File croppedFile = await ImageCropper.cropImage(
-      sourcePath: imageFile.path,
-      aspectRatioPresets: CropAspectRatioPreset.values,
-    );
-
-    return croppedFile;
-  }
+  //
+  // // Usage: newImage = await ImageUtils.cropImage(newImage);
+  // /// Returns null if user canceled crop request
+  // static Future<File> cropImageDialog(File imageFile) async {
+  //   File croppedFile = await ImageCropper.cropImage(
+  //     sourcePath: imageFile.path,
+  //     aspectRatioPresets: CropAspectRatioPreset.values,
+  //   );
+  //
+  //   return croppedFile;
+  // }
 
   /// name - the name (without extension) that will be the filename
   ///

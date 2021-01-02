@@ -29,22 +29,42 @@ class PuzzleBloc extends Cubit<Puzzle> {
     _puzzlesStream.close();
   }
 
-  /// Crop puzzle image. Returns null if crop was canceled by the user; else:
-  /// - Creates a new, cropped image from the original image
-  /// - Uses the original name suffixed numerically to make the name unique
-  /// - Inserts the cropped puzzle into the database
-  /// - returns the new puzzle
-  Future<Puzzle> cropImageAndCreateNewPuzzle(Puzzle puzzle) async {
-    File croppedFile = await ImageService.cropImageDialog(
-        File(puzzle.imageLocation));
-    if (croppedFile == null) {
-      return null;
-    }
-    List<String> excludedNames = ((await Repository.getPuzzles())
-        .map((p) => p.name)).toList();
-    String name = Utils.generateUniqueName(puzzle.name, excludedNames);
-    Puzzle newPuzzle = await Repository.createPuzzle(
-        name, puzzle.imageLocation);
-    return newPuzzle;
+  // /// Crop puzzle image. Returns null if crop was canceled by the user; else:
+  // /// - Creates a new, cropped image from the original image
+  // /// - Uses the original name suffixed numerically to make the name unique
+  // /// - Inserts the cropped puzzle into the database
+  // /// - returns the new puzzle
+  // Future<Puzzle> cropImageAndCreateNewPuzzle(Puzzle puzzle) async {
+  //   File croppedFile = await ImageService.cropImageDialog(
+  //       File(puzzle.imageLocation));
+  //   if (croppedFile == null) {
+  //     return null;
+  //   }
+  //   List<String> excludedNames = ((await Repository.getPuzzles())
+  //       .map((p) => p.name)).toList();
+  //   String name = Utils.generateUniqueName(puzzle.name, excludedNames);
+  //   Puzzle newPuzzle = await Repository.createPuzzle(
+  //       name, puzzle.imageLocation);
+  //   return newPuzzle;
+  // }
+
+  Future<void> updatePuzzle(int id,
+      {String name,
+        Uint8List thumb,
+        String imageLocation,
+        double imageWidth,
+        double imageHeight,
+        Color imageColour,
+        double imageOpacity,
+        int maxPieces}) async {
+    await Repository.updatePuzzle(id,
+        name: name,
+        thumb: thumb,
+        imageLocation: imageLocation,
+        imageWidth: imageWidth,
+        imageHeight: imageHeight,
+        imageColour: imageColour,
+        imageOpacity: imageOpacity,
+        maxPieces: maxPieces);
   }
 }

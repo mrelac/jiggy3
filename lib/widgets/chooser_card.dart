@@ -237,7 +237,7 @@ class _ChooserCardEditingState extends State<ChooserCardEditing> {
                 autocorrect: false,
                 onSubmitted: ((newName) {
                   if (!textStream.hasError) {
-                    bloc.updatePuzzleName(widget.name, newName);
+                    bloc.updatePuzzleName(widget.id, newName);
                     _endEditing();
                   }
                 }),

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
@@ -171,64 +173,85 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     return puzzleList.isEmpty ? null : puzzleList.first;
   }
 
-  Future<void> updatePuzzleName(String oldName, String newName) async {
+  /// Return puzzle from name. Returns puzzle instance if found; null otherwise
+  Future<Puzzle> getPuzzleByName(String name) async {
     final db = await database;
-    const update = 'UPDATE puzzle SET name = ? WHERE name = ?';
-    int count = await db.rawUpdate(update, [newName, oldName]);
-    if (count > 0) {
-      print('Updated puzzle "$oldName" to "$newName"');
-    }
+    const query = 'SELECT * FROM puzzle WHERE name = ?';
+    List<Puzzle> puzzleList = (await db.rawQuery(query, [name]))
+        .map<Puzzle>((json) => Puzzle.fromMap(json))
+        .toList();
+    return puzzleList.isEmpty ? null : puzzleList.first;
   }
 
-  // FIXME FIXME FIXME
-//   Future<void> updatePuzzleThumb(Uint8List thumb) async {
-//     final db = await database;
-//     const String update = '''
-// UPDATE puzzle SET image_location = ?, image_width = ?, image_height = ?,
-//
-//   (name, thumb, image_location, image_width, image_height,
-//    image_colour_r, image_colour_g, image_colour_b,
-//    image_opacity, max_pieces)
-// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// ''';
-//     int count = await db.rawUpdate(update, [newName, oldName]);
-//     if (count > 0) {
-//       print('Updated puzzle "$oldName" to "$newName"');
-//     }
-//   }
+  // Updates only the supplied parameter values.
+  Future<void> updatePuzzle(int id,
+      {String name,
+      Uint8List thumb,
+      String imageLocation,
+      double imageWidth,
+      double imageHeight,
+      Color imageColour,
+      double imageOpacity,
+      int maxPieces}) async {
+    final db = await database;
+    final fields = <String>[];
+    final parms = <dynamic>[];
 
-//   Future<void> insertPuzzle(Puzzle puzzle) async {
-//     final db = await database;
-//     const String insert = '''
-// INSERT INTO puzzle
-//   (name, thumb, image_location, image_width, image_height,
-//    image_colour_r, image_colour_g, image_colour_b,
-//    image_opacity, max_pieces)
-// VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// ''';
-//     print('Inserting puzzle ${puzzle.name}');
-//     puzzle.id = await db.rawInsert(insert, [
-//       puzzle.name,
-//       base64Encode(puzzle.thumb),
-//       puzzle.imageLocation,
-//       puzzle.imageWidth,
-//       puzzle.imageHeight,
-//       puzzle.imageColour.red,
-//       puzzle.imageColour.green,
-//       puzzle.imageColour.blue,
-//       puzzle.imageOpacity,
-//       puzzle.maxPieces
-//     ]);
-//   }
+    if (name != null) {
+      fields.add('name = ?');
+      parms.add(name);
+    }
+    if (thumb != null) {
+      fields.add('thumb = ?');
+      parms.add(thumb);
+    }
+    if (imageLocation != null) {
+      fields.add('image_location = ?');
+      parms.add(imageLocation);
+    }
+    if (imageWidth != null) {
+      fields.add('image_width = ?');
+      parms.add(imageWidth);
+    }
+    if (imageHeight != null) {
+      fields.add('image_height = ?');
+      parms.add(imageHeight);
+    }
+    if (imageColour != null) {
+      fields.add('image_colour_r = ?');
+      parms.add(imageColour.red);
+      fields.add('image_colour_g = ?');
+      parms.add(imageColour.green);
+      fields.add('image_colour_b = ?');
+      parms.add(imageColour.blue);
+    }
+    if (imageOpacity != null) {
+      fields.add('image_opacity = ?');
+      parms.add(imageOpacity);
+    }
+    if (maxPieces != null) {
+      fields.add('max_pieces = ?');
+      parms.add(maxPieces);
+    }
+    parms.add(id);
+
+    final String update =
+        'UPDATE puzzle SET ' + fields.join(",") + ' WHERE id = ?';
+
+    int count = await db.rawUpdate(update, parms);
+    if (count > 0) {
+      print('Updated puzzle. Query: $update. parms = $parms');
+    }
+  }
 
   /// Return a list of jsonPuzzle entries matching albumId. An empty puzzle list
   /// is returned if there are no bound puzzles.
   Future<List<Puzzle>> getPuzzlesByAlbumId(int albumId) async {
     const query = '''
-SELECT p.* FROM puzzle p
- JOIN album_puzzle ap ON ap.puzzle_id = p.id
- JOIN album a ON a.id = ap.album_id
- WHERE a.id = ?;
+    SELECT p.* FROM puzzle p
+    JOIN album_puzzle ap ON ap.puzzle_id = p.id
+    JOIN album a ON a.id = ap.album_id
+    WHERE a.id = ?;
     ''';
     final db = await database;
     return ((await db.rawQuery(query, [albumId]))
@@ -278,59 +301,59 @@ SELECT p.* FROM puzzle p
 
     print('Creating album table');
     db.execute('''
-CREATE TABLE album(
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  name             TEXT NOT NULL UNIQUE
-);
-  ''');
+    CREATE TABLE album(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+    );
+    ''');
 
     print('Creating puzzle table');
     db.execute('''
-CREATE TABLE puzzle(
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  name             TEXT    NOT NULL UNIQUE,
-  thumb            BLOB,
-  image_location   TEXT    NOT NULL, 
-  image_width      REAL,
-  image_height     REAL,
-  image_colour_r   INTEGER,
-  image_colour_g   INTEGER,
-  image_colour_b   INTEGER,
-  image_opacity    REAL,
-  max_pieces       INTEGER
-);
-  ''');
+    CREATE TABLE puzzle(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    thumb BLOB,
+    image_location TEXT NOT NULL,
+    image_width REAL,
+    image_height REAL,
+    image_colour_r INTEGER,
+    image_colour_g INTEGER,
+    image_colour_b INTEGER,
+    image_opacity REAL,
+    max_pieces INTEGER
+    );
+    ''');
 
     print('Creating puzzle_piece table');
     db.execute('''
-CREATE TABLE puzzle_piece(
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  puzzle_id        INTEGER NOT NULL,
-  image_bytes      BLOB    NOT NULL,
-  image_width      REAL    NOT NULL,
-  image_weight     REAL    NOT NULL,
-  locked           INTEGER NOT NULL,
-  row              INTEGER NOT NULL,
-  col              INTEGER NOT NULL,
-  max_row          INTEGER NOT NULL,
-  max_col          INTEGER NOT NULL,
-  FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)
+    CREATE TABLE puzzle_piece(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    puzzle_id INTEGER NOT NULL,
+    image_bytes BLOB NOT NULL,
+    image_width REAL NOT NULL,
+    image_weight REAL NOT NULL,
+    locked INTEGER NOT NULL,
+    row INTEGER NOT NULL,
+    col INTEGER NOT NULL,
+    max_row INTEGER NOT NULL,
+    max_col INTEGER NOT NULL,
+    FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)
     ON DELETE NO ACTION ON UPDATE NO ACTION
-);
-  ''');
+    );
+    ''');
 
     print('Creating album_puzzle table');
     db.execute('''
-CREATE TABLE album_puzzle(
-  id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  album_id         INTEGER NOT NULL,
-  puzzle_id        INTEGER NOT NULL,
-  FOREIGN KEY (album_id) REFERENCES album (id)
+    CREATE TABLE album_puzzle(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    album_id INTEGER NOT NULL,
+    puzzle_id INTEGER NOT NULL,
+    FOREIGN KEY (album_id) REFERENCES album (id)
     ON DELETE NO ACTION ON UPDATE NO ACTION,
-  FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)
+    FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)
     ON DELETE NO ACTION ON UPDATE NO ACTION,
-  UNIQUE(album_id, puzzle_id)
-);
-  ''');
+    UNIQUE(album_id, puzzle_id)
+    );
+    ''');
   }
 }

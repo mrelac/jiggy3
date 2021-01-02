@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -17,12 +18,82 @@ class ImageService {
     return croppedFile;
   }
 
+  /// Return image bytes for any type of image: AssetImage, FileImage,
+  /// NetworkImage, or MemoryImage.
+  static Future<Uint8List> getImageBytes(Image image) async {
+    Uint8List bytes;
+
+    if (image == null) {
+      return null;
+    }
+    switch (image.image.runtimeType) {
+      case AssetImage:
+        {
+          AssetImage ai = image.image as AssetImage;
+          ByteData bd = await rootBundle.load(ai.assetName);
+          final buffer = bd.buffer;
+          bytes = buffer.asUint8List();
+          break;
+        }
+
+      case FileImage:
+        {
+          FileImage fi = image.image as FileImage;
+          bytes = fi.file.readAsBytesSync();
+          break;
+        }
+
+      case NetworkImage:
+        {
+          NetworkImage ni = image.image as NetworkImage;
+          bytes =
+              (await NetworkAssetBundle(Uri.parse(ni.url)).load(ni.url)).buffer
+                  .asUint8List();
+          break;
+        }
+
+      case MemoryImage:
+        {
+          MemoryImage mi = image.image as MemoryImage;
+          bytes = mi.bytes;
+          break;
+        }
+
+      default:
+        {
+          print(
+              'imageToBytes(): Unknown Image type ${image.image.runtimeType}');
+          break;
+        }
+    }
+
+    return bytes;
+  }
+
+  static Future<Size> getImageSize(Image image) {
+    Completer<Size> completer = Completer();
+    image.image.resolve(ImageConfiguration()).addListener(
+        ImageStreamListener(
+                (ImageInfo imageInfo, bool synchronousCall) {
+              Size size = Size(
+                  imageInfo.image.width.toDouble(),
+                  imageInfo.image.height.toDouble());
+              completer.complete(size);
+            }));
+
+    return completer.future;
+  }
+
   // By convention, bytes must be a jpg byte stream. This convention allows
   // us to encode/decode without having to check image type first.
   static Uint8List resizeBytes(Uint8List bytes, double width, [double height]) {
     imglib.Image libImage = imglib.copyResize(imglib.decodeJpg(bytes),
         width: width.floor(), height: height?.floor());
     return imglibToImage(libImage).bytes;
+  }
+
+  static bool isPortrait(Size imageSize) {
+    return imageSize.height > imageSize.width;
   }
 
   /// Translates imglib Image to material Image using encodeJpg.

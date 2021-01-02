@@ -1,8 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jiggy3/blocs/chooser_bloc.dart';
+import 'package:jiggy3/blocs/puzzle_bloc.dart';
+import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/puzzle.dart';
-import 'package:jiggy3/utilities/image_utilities.dart';
+import 'package:jiggy3/services/image_service.dart';
+import 'package:jiggy3/services/utils.dart';
 
 // NOTES: This page provides the player a place to:
 //   - Choose the number of pieces
@@ -47,10 +52,10 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   final _maxPiecesChoices = <int>[
     1, 2, 3, 4, 5, 8, 12, 50, 77, 96, 140, 200, 234, 336, 400, 432, 512, 756, 1024,
   ];
-  final _sizeBoxPadding = EdgeInsets.all(8.0);
-  bool _isChecked = true;
-  int _maxPuzzlePieces;
+  File _croppedImageFile;
+  int _maxPieces;
   Puzzle _returnedPuzzle;
+  final _sizeBoxPadding = EdgeInsets.all(8.0);
 
   @override
   Widget build(BuildContext context) {
@@ -60,16 +65,16 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
         color: Colors.grey[700],
         elevation: 4.0,
         child: Column(children: [
-          _puzzleSize,
+          _puzzleSizeChooser,
           _puzzleSizes(),
           _crop(),
-          if (_maxPuzzlePieces != null) _play()
+          if (_maxPieces != null) _play()
         ]),
       ),
     );
   }
 
-  final Widget _puzzleSize = Center(
+  final Widget _puzzleSizeChooser = Center(
     child: Padding(
       padding: const EdgeInsets.only(top: 120.0, bottom: 32),
       child: Text(
@@ -86,25 +91,25 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
         maxCrossAxisExtent: 100.0,
         childAspectRatio: 1.4,
         children: List.generate(_maxPiecesChoices.length,
-            (index) => _maxPiecesButton(_maxPiecesChoices[index])),
+            (index) => _puzzleSizeButton(_maxPiecesChoices[index])),
       ),
     );
   }
 
-  Widget _maxPiecesButton(int maxPieces) {
+  Widget _puzzleSizeButton(int puzzleSize) {
     return ButtonTheme(
       child: RaisedButton(
-        onPressed: () => setState(() => _maxPuzzlePieces = maxPieces),
+        onPressed: () => setState(() => _maxPieces = puzzleSize),
         textColor: Colors.white70,
         color: Colors.grey[700],
         padding: _sizeBoxPadding,
         child: Container(
-          decoration: _puzzleSizeDecoration(maxPieces),
+          decoration: _puzzleSizeDecoration(puzzleSize),
           child: Center(
               child: Padding(
             padding: const EdgeInsets.all(6.0),
             child:
-                Text('${maxPieces.toString()}', style: TextStyle(fontSize: 25)),
+                Text('${puzzleSize.toString()}', style: TextStyle(fontSize: 25)),
           )),
         ),
       ),
@@ -124,10 +129,26 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   }
 
   Future<void> _onCropPressed() async {
-    await ImageUtils.cropImageDialog(File(widget.puzzle.imageLocation));
+    _croppedImageFile =
+        await ImageService.cropImageDialog(File(widget.puzzle.imageLocation));
+    print('Cropped image file: $_croppedImageFile');
   }
 
   Future<void> _onPlayPressed() async {
+    ChooserBloc chooserBloc = BlocProvider.of<ChooserBloc>(context);
+    PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
+    if (_croppedImageFile != null) {
+      String newName = Utils.generateUniqueName(widget.puzzle.name, chooserBloc.getPuzzleNames());
+      chooserBloc.createPuzzle(_croppedImageFile.path, name: newName);
+      _returnedPuzzle = await Repository.getPuzzleByName(newName);
+    } else {
+      _returnedPuzzle = widget.puzzle.from;
+      _returnedPuzzle.maxPieces = _maxPieces;
+      await puzzleBloc.updatePuzzle(_returnedPuzzle.id, maxPieces: _maxPieces);
+    }
+
+
+
     _returnedPuzzle = widget.puzzle;
     _onWillPop();
     // File croppedImageFile;
@@ -163,7 +184,7 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
 
   BoxDecoration _puzzleSizeDecoration(int maxPuzzlePieces) {
     BoxDecoration bd;
-    if (maxPuzzlePieces == (_maxPuzzlePieces ?? 0)) {
+    if (maxPuzzlePieces == (_maxPieces ?? 0)) {
       bd = BoxDecoration(
           border: Border.all(color: Colors.yellow, width: 4.0),
           color: Colors.blueAccent);

@@ -98,6 +98,10 @@ class Repository {
     return await DBProvider.db.getPuzzleById(puzzleId);
   }
 
+  static Future<Puzzle> getPuzzleByName(String name) async {
+    return await DBProvider.db.getPuzzleByName(name);
+  }
+
   static Future<List<Puzzle>> getPuzzlesByAlbumId(int albumId) async {
     return await DBProvider.db.getPuzzlesByAlbumId(albumId);
   }
@@ -106,11 +110,25 @@ class Repository {
     return Image.file(File(location), width: width, height: height);
   }
 
-  static Future<void> updatePuzzleName(String oldName, String newName) async {
-    await DBProvider.db.updatePuzzleName(oldName, newName);
+  static Future<void> updatePuzzle(int id,
+      {String name,
+      Uint8List thumb,
+      String imageLocation,
+      double imageWidth,
+      double imageHeight,
+      Color imageColour,
+      double imageOpacity,
+      int maxPieces}) async {
+    await DBProvider.db.updatePuzzle(id,
+        name: name,
+        thumb: thumb,
+        imageLocation: imageLocation,
+        imageWidth: imageWidth,
+        imageHeight: imageHeight,
+        imageColour: imageColour,
+        imageOpacity: imageOpacity,
+        maxPieces: maxPieces);
   }
-
-  static Future<void> updatePuzzleImage() async {}
 
   /// Reset the application: drop and create database and image storage file
   /// directories and return a list of asset albums with puzzles.
