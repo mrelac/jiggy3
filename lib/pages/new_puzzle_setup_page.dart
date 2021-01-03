@@ -34,6 +34,7 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
         color: Colors.grey[700],
         elevation: 4.0,
         child: Column(children: [
+          _puzzleName(),
           _puzzleSizeChooser,
           _puzzleSizes(),
           _crop(),
@@ -43,12 +44,24 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
     );
   }
 
+  Widget _puzzleName() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 48.0, bottom: 0),
+        child: Text(
+          '${widget.puzzle.name}',
+          style: TextStyle(fontSize: 50, color: Colors.white38),
+        ),
+      ),
+    );
+  }
+
   final Widget _puzzleSizeChooser = Center(
     child: Padding(
-      padding: const EdgeInsets.only(top: 120.0, bottom: 32),
+      padding: const EdgeInsets.only(top: 64.0, bottom: 32),
       child: Text(
         'Please choose a puzzle size',
-        style: TextStyle(fontSize: 40, color: Colors.white70),
+        style: TextStyle(fontSize: 30, color: Colors.white70),
       ),
     ),
   );
@@ -93,7 +106,7 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
 
   Widget _play() {
     return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32.0),
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
         child: _textButton('Play', Icons.play_arrow, _onPlayPressed));
   }
 

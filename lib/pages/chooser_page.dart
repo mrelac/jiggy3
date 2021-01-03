@@ -43,6 +43,7 @@ class ChooserPage extends StatefulWidget {
 }
 
 class _ChooserPageState extends State<ChooserPage> {
+  static final Color mainBackground = Colors.grey[500];
   AppBar _appBar;
   AppBar _appBarStandard;
   AppBar _appBarEdit;
@@ -88,6 +89,7 @@ class _ChooserPageState extends State<ChooserPage> {
     return Scaffold(
       appBar: _appBar,
       body: Material(
+        color: mainBackground,
         child: StreamBuilder<List<Album>>(
             stream: bloc.albumsStream,
             builder: (context, snapshot) {
@@ -133,7 +135,7 @@ class _ChooserPageState extends State<ChooserPage> {
                 return Container(
                   padding: EdgeInsets.only(left: 8.0),
                   key: Key('$index'),
-                  color: Colors.orange[50],
+                  color: mainBackground,
                   child: ChooserCardEditing(
                     id: album.puzzles[index].id,
                     albumName: album.name,
@@ -144,7 +146,7 @@ class _ChooserPageState extends State<ChooserPage> {
               } else {
                 return Container(
                   key: Key('$index'),
-                  color: Colors.orange[50],
+                  color: mainBackground,
                   child: ChooserCard(
                     name: album.puzzles[index].name,
                     thumb: album.puzzles[index].thumb,
