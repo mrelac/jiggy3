@@ -15,7 +15,6 @@ import 'package:jiggy3/widgets/album_builder.dart';
 import 'package:jiggy3/widgets/appbar_actions.dart';
 import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/chooser_card.dart';
-import 'package:jiggy3/widgets/new_puzzle_setup_page.dart';
 import 'package:provider/provider.dart';
 
 const ARG_RESET =
@@ -183,8 +182,8 @@ class _ChooserPageState extends State<ChooserPage> {
     // Update contains the changed puzzle, or null if the puzzle didn't change.
     if (update != null) {
       print('Returned from NewPuzzleSetupPage. Puzzle = $update');
-      // TODO - Update PuzzleCard
-      // _counterBloc.setCounter(update);
+      BlocProvider.of<ChooserBloc>(context).getAlbums();
+      _navigateToPlayPage(update);
     }
   }
 

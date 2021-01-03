@@ -169,8 +169,9 @@ class Repository {
 
   // Returns a single album named 'Saved' containing all puzzles in progress
   static Future<Album> getAlbumSaved() async {
-    // throw Exception('Not implemented yet');
-    // TODO - getAlbumSaved()
-    return Album(isSelectable: false, name: ALBUM_SAVED, puzzles: []);
+    final List<Puzzle> puzzles = (await DBProvider.db.getPuzzles())
+        .where((p) => p.maxPieces > -1)
+        .toList();
+    return Album(isSelectable: false, name: ALBUM_SAVED, puzzles: puzzles);
   }
 }

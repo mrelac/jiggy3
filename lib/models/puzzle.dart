@@ -85,7 +85,7 @@ class Puzzle {
       // crop, base64Decode
       try {
         this.thumb = base64Decode(json['thumb']);
-        print("LOADED THUMB FOR $name USING base64Decode!");
+        print('Loaded thumb for $name using base64Decode');
       } catch (e) {
         print('EXCEPTION: e: ${e}');
         print("LOADING ${name} base64Decode FAILED! LOADING WITHOUT DECODING!");
