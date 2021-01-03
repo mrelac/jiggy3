@@ -2,44 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:jiggy3/blocs/chooser_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
-import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/services/image_service.dart';
 import 'package:jiggy3/services/puzzle_service.dart';
-import 'package:jiggy3/services/utils.dart';
-
-// NOTES: This page provides the player a place to:
-//   - Choose the number of pieces
-//   - Crop the image if desired
-//   Hitting the cancel or back button cancels the operation and returns
-//   to the calling widget.
-
-// build():
-//  return Widget newPuzzleSetup():
-//    maxPieces grid, crop checkbox, cancel button, Ok/Play/Done button
-//    onCancel:
-//    - put null in puzzleBloc sink
-//    onPlay:
-//    - Set puzzle.maxPieces from maxPieces chosen
-//    - if crop selected:
-//      - result = showCropper
-//      - if result == null:
-//        - put null in puzzleBloc sink
-//      - else:
-//        - create newPuzzle from cropped image (Repository.createPuzzle())
-//          and maxPieces.
-//    - else
-//      - update puzzle.maxPieces in database
-//    - call puzzleBloc.newPuzzleSetup():
-//      - Initialise BusyIndicator and set BUSY flag
-//      - await Repository.splitImageIntoPieces
-//      - Add puzzlePieces to puzzle
-//      - Update database with puzzle pieces (update Progress)
-//      - Put puzzle in puzzleBloc sink
-//      - Clear BUSY flag
-//    - Free resources and return to caller
 
 class NewPuzzleSetupPage extends StatefulWidget {
   final Puzzle puzzle;
@@ -111,8 +77,8 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
           child: Center(
               child: Padding(
             padding: const EdgeInsets.all(6.0),
-            child:
-                Text('${puzzleSize.toString()}', style: TextStyle(fontSize: 25)),
+            child: Text('${puzzleSize.toString()}',
+                style: TextStyle(fontSize: 25)),
           )),
         ),
       ),
@@ -139,15 +105,6 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
 
   Future<void> _onPlayPressed() async {
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
-
-    // If crop
-    //   copy cropped image to device storage
-    //   update _returnedPuzzle with new imageLocation, thumb, imageWidth, and imageSize
-    //   delete old image on device
-    // Update _returnedPuzzle.maxPieces
-    // Split image into pieces
-    // return _returnedPuzzle
-
     Puzzle wp = widget.puzzle;
     // Update _returned Puzzle as appropriate and save to database.
     _returnedPuzzle = wp.from;
@@ -162,27 +119,26 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
         ..imageHeight = p.imageHeight;
 
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
-      imageLocation: _returnedPuzzle.imageLocation,
-      thumb: _returnedPuzzle.thumb,
-      imageWidth: _returnedPuzzle.imageWidth,
-      imageHeight: _returnedPuzzle.imageHeight);
+          imageLocation: _returnedPuzzle.imageLocation,
+          thumb: _returnedPuzzle.thumb,
+          imageWidth: _returnedPuzzle.imageWidth,
+          imageHeight: _returnedPuzzle.imageHeight);
     }
 
     _returnedPuzzle.piecesLoose
       ..clear()
-      ..addAll(
-          await PuzzleService.splitImageIntoPieces(
-            image: _returnedPuzzle.image,
-            imageHeight: _returnedPuzzle.imageHeight,
-            imageWidth: _returnedPuzzle.imageWidth,
-            numPieces: _returnedPuzzle.maxPieces,
-            deviceSize: MediaQuery.of(context).size
-          ));
+      ..addAll(await PuzzleService.splitImageIntoPieces(
+          image: _returnedPuzzle.image,
+          imageHeight: _returnedPuzzle.imageHeight,
+          imageWidth: _returnedPuzzle.imageWidth,
+          numPieces: _returnedPuzzle.maxPieces,
+          deviceSize: MediaQuery.of(context).size));
 
     await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
         maxPieces: _returnedPuzzle.piecesLoose.length);
 
     print('piecesLoose count: ${_returnedPuzzle.piecesLoose.length}');
+
 
 
     // FIXME TODO: INSERT piecesLoose INTO DATABASE!

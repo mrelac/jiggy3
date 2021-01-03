@@ -17,6 +17,8 @@ import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/chooser_card.dart';
 import 'package:provider/provider.dart';
 
+import 'new_puzzle_setup_page.dart';
+
 const ARG_RESET =
     String.fromEnvironment('applicationReset', defaultValue: 'false');
 
