@@ -72,25 +72,7 @@ class Puzzle {
       this.maxPieces = json['max_pieces'];
     }
     if (json['thumb'] != null) {
-      // FIXME Fix this when you figure out what's breaking. This hack handles both assets and crops for now.
-      // When loading assets, if you don't use base64Decode like this:
-      //    this.thumb = base64Decode(json['thumb']);
-      // dart throws "Unhandled Exception: type 'String' is not a subtype of type 'Uint8List'"
-      // but after cropping and saving the new, cropped image, using base64Decode,
-      // dart throws "Unhandled Exception: type '_Uint8ArrayView' is not a subtype of type 'String'".
-      // So you must remove the decode:
-      //    this.thumb = json['thumb'];
-      //
-      // Loading asset thumbs only work with base64Decode, but after
-      // crop, base64Decode
-      try {
-        this.thumb = base64Decode(json['thumb']);
-        print('Loaded thumb for $name using base64Decode');
-      } catch (e) {
-        print('EXCEPTION: e: ${e}');
-        print("LOADING ${name} base64Decode FAILED! LOADING WITHOUT DECODING!");
-        this.thumb = json['thumb'];
-      }
+      this.thumb = base64Decode(json['thumb']);
     }
     if (json['image_colour_r'] != null) {
       imageColour = Color.fromRGBO(

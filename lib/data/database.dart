@@ -204,7 +204,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     }
     if (thumb != null) {
       fields.add('thumb = ?');
-      parms.add(thumb);
+      parms.add(base64Encode(thumb));
     }
     if (imageLocation != null) {
       fields.add('image_location = ?');

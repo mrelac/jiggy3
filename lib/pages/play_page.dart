@@ -1,11 +1,9 @@
-import 'dart:math';
 
 import 'package:fab_circular_menu/fab_circular_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jiggy3/models/puzzle.dart';
-import 'package:jiggy3/models/puzzle_piece.dart';
 
 class PlayPage extends StatefulWidget {
   Puzzle puzzle;
@@ -18,8 +16,7 @@ class PlayPage extends StatefulWidget {
 // FIXME Don't know what the 'with WidgetsBindingObserver' is used to listen for.
 // FIXME I thought it was to detect and handle device orientation changes, but
 // FIXME I commented it out and the app still detects orientation changes!
-class _PlayPageState
-    extends State<PlayPage> /*with WidgetsBindingObserver*/ {
+class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
   final vlvPadding = EdgeInsets.only(bottom: 16.0, right: 16.0);
   final hlvPadding = EdgeInsets.only(right: 16.0, bottom: 16.0, top: 12);
 
@@ -97,14 +94,6 @@ class _PlayPageState
     _colourValue = puzzle.imageColour;
     _cropRequested =
         new ValueNotifier<bool>(false); // FIXME: Moved to PuzzleSizeChooser
-    // if (puzzle.playState != PlayState.inProgress) {
-    if (_numPiecesOverlay == null) {
-      _numPiecesOverlay = _createNumPiecesOverlay();
-      Overlay.of(context).insert(_numPiecesOverlay);
-    }
-    // }
-
-    await _loadPieces();
 
     setState(() {
       _image = puzzle.image.image;
@@ -387,251 +376,6 @@ class _PlayPageState
     return (dw / bw).floor();
   }
 
-  OverlayEntry _createNumPiecesOverlay() {
-    // FIXME FIXME FIXME Center this overlay someday!
-//    var position = _getPosition(_fabColourKey);
-//    double height = 130.0;
-//    double width = 550.0;
-//    double left = position.dx - 23 - width;
-//    if (left < 0) {
-//      width += left;
-//      left = 0;
-//    }
-
-    return OverlayEntry(
-        builder: (context) => Positioned(
-            key: _numPiecesKey,
-            left: 0.0,
-            top: 350,
-            child: Material(
-              color: Colors.grey[700],
-              elevation: 4.0,
-              child: Column(
-                children: _getNumPiecesRows(),
-              ),
-            )));
-  }
-
-  // FIXME Moved to PuzzleSizeChooser
-  @deprecated
-  List<Widget> _getNumPiecesRows() {
-    List<Widget> widgets = [];
-    widgets.add(Container(
-      child: Center(
-        child: Text(
-          'Puzzle Size',
-          style: TextStyle(fontSize: 25, color: Colors.white70),
-        ),
-      ),
-    ));
-
-    int numBoxesPerRow = _maxBoxesPerRow(_sizeBoxWidth, _sizeBoxPadding);
-    int start = 0;
-    int end;
-    while (start < sizeChoices.length) {
-      end = min(start + numBoxesPerRow, sizeChoices.length);
-      List<int> sub = sizeChoices.sublist(start, end);
-      widgets.add(Row(children: _getSizeChoices(sub)));
-      start += min(numBoxesPerRow, sizeChoices.length);
-    }
-
-    // This is the last row of widgets in the Puzzle Size chooser.
-    widgets.add(Row(
-      children: [
-        ButtonTheme(
-          child: RaisedButton(
-            // onPressed: () async {
-            //   print('play pressed');
-            //   _closeNumPieces();
-            //
-            //
-            //
-            //
-            //   File oldImageFile = new File(widget.puzzle.fileImage.file.path);
-            //   if (_cropRequested.value) {
-            //     puzzle = await _createPuzzleFromImage(
-            //         puzzle, await ImageUtils.cropImageDialog(oldImageFile));
-            //   } else {
-            //     puzzle = await _createPuzzleFromImage(puzzle, oldImageFile);
-            //   }
-            //
-            //   await _persist.deleteImage(widget.puzzle);
-            //   await _persist.upsertPuzzle(puzzle);
-            //
-            //   List<PuzzlePiece> piecesLoose =
-            //       await _splitImageIntoPieces(puzzle, _numPieces);
-            //   puzzle.initialisePuzzleToPlay(piecesLoose);
-            //
-            //   setState(() {
-            //     _image = puzzle.image.image;
-            //     widget.puzzle = puzzle;
-            //     // widget.notifyParent(puzzle);
-            //   });
-            // },
-            textColor: Colors.white,
-            color: Colors.grey[700],
-            padding: const EdgeInsets.all(10.0),
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.yellow,
-                ),
-                child: Center(
-                    child: Row(
-                  children: [
-                    IconButton(
-                      iconSize: 48.0,
-                      icon: Icon(Icons.play_arrow),
-                    ),
-                  ],
-                )),
-              ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text('Play', style: TextStyle(fontSize: 30)),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 40.0),
-          child: Text('Crop', style: TextStyle(fontSize: 20)),
-        ),
-        ValueListenableBuilder<bool>(
-            valueListenable: _cropRequested,
-            builder: (context, value, child) {
-              return Checkbox(
-                value: _cropRequested.value,
-                onChanged: ((newValue) {
-                  setState(() {
-                    _cropRequested.value = newValue; // newValue;
-                    print('Checkbox is now ${_cropRequested.value}');
-                  });
-                }),
-              );
-            }),
-      ],
-    ));
-
-    return widgets;
-  }
-
-  final sizeChoices = <int>[
-    1,
-    2,
-    3,
-    4,
-    5,
-    8,
-    12,
-    50,
-    77,
-    96,
-    140,
-    200,
-    234,
-    336,
-    400,
-    432,
-    512,
-    756,
-    1024
-  ];
-  final _sizeBoxWidth = 80.0;
-  final _sizeBoxPadding = EdgeInsets.all(8.0);
-
-  // FIXME Moved to PuzzleSizeChooser
-  @deprecated
-  List<Widget> _getSizeChoices(List<int> sizes) {
-    var buttons = <ButtonTheme>[];
-
-    for (int s in sizes) {
-      buttons.add(
-        ButtonTheme(
-          minWidth: 30.0,
-          child: RaisedButton(
-            onPressed: () {
-              _numPiecesOverlay.markNeedsBuild();
-              setState(() {
-                _numPieces = s;
-                print('_numPieces now ${_numPieces.toString()}');
-                Size ss = _getSize(_numPiecesKey);
-                print('Puzzle Size Box: ${ss.width} x ${ss.height}');
-              });
-//              _closeNumPieces();
-            },
-            textColor: Colors.white70,
-            color: Colors.grey[700],
-            padding: _sizeBoxPadding,
-            // const EdgeInsets.all(8.0),
-            child: Container(
-              width: _sizeBoxWidth,
-              decoration: _puzzleSizeDecoration(s),
-              child: Center(
-                  child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: Text('${s.toString()}', style: TextStyle(fontSize: 25)),
-              )),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return buttons;
-  }
-
-  // FIXME Moved to PuzzleSizeChooser
-  @deprecated
-  BoxDecoration _puzzleSizeDecoration(int size) {
-    BoxDecoration bd;
-    if (size == (_numPieces ?? 0)) {
-      bd = BoxDecoration(
-          border: Border.all(color: Colors.white70, width: 6.0),
-          color: Colors.blueAccent);
-    } else {
-      bd = BoxDecoration(
-        border: Border.all(color: Colors.yellow, width: 2.0),
-        gradient: LinearGradient(
-          colors: <Color>[
-            Color(0xFF0D47A1),
-            Color(0xFF1976D2),
-            Color(0xFF42A5F5),
-          ],
-        ),
-      );
-    }
-
-    return bd;
-  }
-
-  // Replaced by Repository.createPuzzle()
-  // @deprecated
-  // Future<Puzzle> _createPuzzleFromImage(Puzzle puzzle, File imageFile) async {
-  //   String nowDateStamp =
-  //       DateFormat('yyyy-MM-dd_HH:mm:ss').format(DateTime.now());
-  //   String name = widget.puzzle.name + "_" + nowDateStamp;
-  //
-  //   await ImageUtils.createImageFromFile(name, imageFile);
-  //   String imageLocation = ImageUtils.createLocationFromName(name);
-  //
-  //   Puzzle p = Puzzle(
-  //       id: puzzle.id,
-  //       name: puzzle.name,
-  //       thumb: imageFile.readAsBytesSync(),
-  //       imageLocation: imageLocation,
-  //       imageWidth: puzzle.imageWidth,
-  //       imageHeight: puzzle.imageHeight,
-  //       isEditing: globals.isEditing,
-  //       isTicked: puzzle.isTicked,
-  //       onEditTapped: puzzle.onEditTapped,
-  //       onCheckboxTicked: puzzle.onCheckboxTicked,
-  //       onChanged: puzzle.onChanged);
-  //
-  //   return p;
-  // }
-
   Offset _getPosition(GlobalKey key) {
     final RenderBox renderBox = key.currentContext.findRenderObject();
     return renderBox.localToGlobal(Offset.zero);
@@ -760,8 +504,6 @@ class _PlayPageState
     );
   }
 
-  Future<void> _initialisePuzzleForPlay() async {}
-
   _closeNumPieces() {
     if (_numPiecesOverlay != null) {
       _numPiecesOverlay.remove();
@@ -783,92 +525,5 @@ class _PlayPageState
   _closeOverlays() {
     _closeNumPieces();
     _closeSiders();
-  }
-
-  Size _computeNumRowsAndCols(int numPieces) {
-    double imageAspectRatio =
-        widget.puzzle.imageWidth / widget.puzzle.imageHeight;
-    // Compute number of cols: sqrt(numPieces * aspectRatio)
-    int cols = sqrt(numPieces * imageAspectRatio).floor();
-
-    // Compute number of rows: cols * 1 / aspectRatio
-    int rows = (cols * 1 / imageAspectRatio).floor();
-
-    print('Rows = $rows. cols = $cols');
-
-    return Size(cols.toDouble(), rows.toDouble());
-  }
-
-  // FIXME This should go into a service
-  @deprecated
-  Future<List<PuzzlePiece>> _splitImageIntoPieces(
-      Puzzle puzzle, int numPieces) async {
-    var pieces = <PuzzlePiece>[];
-
-//     Uint8List largeImageBytes =
-//         await ImageUtils.getImageBytes(puzzle.image); // imageBytes
-//     Size largeImageSize = await ImageUtils.getImageSize(puzzle.image);
-//     imglib.Image imglibOriginalBytes =
-//         imglib.decodeImage(largeImageBytes); // largeImage
-//
-//     double newHeight;
-//     double newWidth;
-//
-//     if (ImageUtils.isPortrait(largeImageSize)) {
-//       newHeight = max(deviceSize.height, deviceSize.width);
-//       newWidth = min(deviceSize.height, deviceSize.width);
-//     } else {
-//       newHeight = min(deviceSize.height, deviceSize.width);
-//       newWidth = max(deviceSize.height, deviceSize.width);
-//     }
-//
-//     imglib.Image imglibSmallImage = imglib.copyResize(imglibOriginalBytes,
-//         height: newHeight.toInt(), width: newWidth.toInt());
-//     Image image2 = Image.memory(imglib.encodeJpg(imglibSmallImage));
-//     Size smallImageSize = await ImageUtils.getImageSize(image2);
-//     Uint8List smallImageBytes = await ImageUtils.getImageBytes(image2);
-//     print(
-//         'TEST: largeImage size = $largeImageSize. byteCount = ${largeImageBytes.length}');
-//     print(
-//         'TEST: smallImage size = $smallImageSize. byteCount = ${smallImageBytes.length}');
-//
-//     int x = 0, y = 0;
-//     Size colsAndRows = _computeNumRowsAndCols(numPieces);
-//     int numCols = colsAndRows.width.toInt();
-//     int numRows = colsAndRows.height.toInt();
-//     int width = (puzzle.image.width / numCols).floor();
-//     int height = (puzzle.image.height / numRows).floor();
-//     imglib.Image image = imglibSmallImage;
-//     List<imglib.Image> parts = List<imglib.Image>();
-//     for (int i = 0; i < numRows; i++) {
-//       for (int j = 0; j < numCols; j++) {
-// //print('x: $x, y: $y, width: $width, height: $height');
-//         try {
-//           parts.add(imglib.copyCrop(image, x, y, width, height));
-//         } catch (e) {
-//           break;
-//         }
-//         x += width;
-//       }
-//       x = 0;
-//       y += height;
-//     }
-//
-//     // convert image from image package to Image Widget to display
-//     List<Image> output = List<Image>();
-//     for (var img in parts) {
-//       pieces.add(PuzzlePiece(image: Image.memory(imglib.encodeJpg(img))));
-//     }
-//
-//     print('Loaded ${pieces.length} pieces. Width: $width, Height: $height');
-
-    return pieces;
-  }
-
-  Future<void> _loadPieces() async {
-    // load played pieces onto palette
-    // load unplayed pieces into listview
-
-    print('loading palette with locked and loose pieces');
   }
 }
