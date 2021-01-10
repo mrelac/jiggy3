@@ -34,6 +34,7 @@ const ARG_RESET =
 /// It is a StatefulWidget solely to take advantage of initState(), which
 ///   is executed only once.
 class ChooserPage extends StatefulWidget {
+  static Size deviceSize;
   final String title;
   static const int MAX_NAME_LENGTH = 16;
 
@@ -72,6 +73,7 @@ class _ChooserPageState extends State<ChooserPage> {
   StreamSubscription _albumStreamSub;
   @override
   Widget build(BuildContext context) {
+    ChooserPage.deviceSize = MediaQuery.of(context).size;
     ChooserBloc bloc = Provider.of<ChooserBloc>(context);
     if (_albumStreamSub != null) {
       _albumStreamSub.cancel();

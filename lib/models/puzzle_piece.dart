@@ -1,66 +1,92 @@
+import 'dart:convert';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
-class PuzzlePiece extends StatefulWidget {
+class PuzzlePiece {
   int id;
-  final Image image;
-  final Size imageSize;
-  final int row;
-  final int col;
+  final int puzzleId;
+  final Uint8List imageBytes;
+  final double imageWidth;
+  final double imageHeight;
+  bool locked;
+  int row;
+  int col;
   final int maxRow;
   final int maxCol;
-  bool locked;
+  final Image image;
+  double _top;
+  double _left;
 
   PuzzlePiece(
-      {Key key,
-        int id,
-        @required this.image,
-        @required this.imageSize,
-        @required this.row,
-        @required this.col,
-        @required this.maxRow,
-        @required this.maxCol})
-      : this.id = id, super(key: key);
+      {this.id,
+      this.puzzleId,
+      this.imageBytes,
+      this.imageWidth,
+      this.imageHeight,
+      this.locked: false,
+      this.row,
+      this.col,
+      this.maxRow,
+      this.maxCol})
+      : image = Image.memory(imageBytes);
 
-  @override
-  PuzzlePieceState createState() {
-    return new PuzzlePieceState();
-  }
-}
+  PuzzlePiece.fromMap(Map json)
+      : assert(json['id'] != null),
+        assert(json['puzzle_id'] != null),
+        assert(json['image_bytes'] != null),
+        assert(json['image_width'] != null),
+        assert(json['image_height'] != null),
+        assert(json['locked'] != null),
+        assert(json['row'] != null),
+        assert(json['col'] != null),
+        assert(json['max_row'] != null),
+        assert(json['max_col'] != null),
 
-class PuzzlePieceState extends State<PuzzlePiece> {
-  double top;
-  double left;
+        id = json['id'],
+        puzzleId = json['puzzle_id'],
+        imageBytes = base64Decode(json['image_bytes']),
+        imageWidth = json['image_width'],
+        imageHeight = json['image_height'],
+        locked = json['locked'] == 1 ? true : false,
+        row = json['row'],
+        col = json['col'],
+        maxRow = json['max_row'],
+        maxCol = json['max_col'],
+        image = Image.memory(json['image_bytes']);
 
-  @override
+
+  // @override
+// FIXME Why is there a build widget in a model class?
   Widget build(BuildContext context) {
     final imageWidth = MediaQuery.of(context).size.width;
-    final imageHeight = MediaQuery.of(context).size.height * MediaQuery.of(context).size.width / widget.imageSize.width;
-    final pieceWidth = imageWidth / widget.maxCol;
-    final pieceHeight = imageHeight / widget.maxRow;
+    final imageHeight = MediaQuery.of(context).size.height *
+        MediaQuery.of(context).size.width /
+        imageWidth;
+    final pieceWidth = imageWidth / maxCol;
+    final pieceHeight = imageHeight / maxRow;
 
-    if (top == null) {
-      top = Random().nextInt((imageHeight - pieceHeight).ceil()).toDouble();
-      top -= widget.row * pieceHeight;
+    if (_top == null) {
+      _top = Random().nextInt((imageHeight - pieceHeight).ceil()).toDouble();
+      _top -= row * pieceHeight;
     }
-    if (left == null) {
-      left = Random().nextInt((imageWidth - pieceWidth).ceil()).toDouble();
-      left -= widget.col * pieceWidth;
+    if (_left == null) {
+      _left = Random().nextInt((imageWidth - pieceWidth).ceil()).toDouble();
+      _left -= col * pieceWidth;
     }
 
     return Positioned(
-      top: top,
-      left: left,
+      top: _top,
+      left: _left,
       width: imageWidth,
       child: ClipPath(
         child: CustomPaint(
-            foregroundPainter: PuzzlePiecePainter(widget.row, widget.col, widget.maxRow, widget.maxCol),
-            child: widget.image
-            ),
-        clipper: PuzzlePieceClipper(widget.row, widget.col, widget.maxRow, widget.maxCol),
-        ),
-      );
+            foregroundPainter: PuzzlePiecePainter(row, col, maxRow, maxCol),
+            child: image),
+        clipper: PuzzlePieceClipper(row, col, maxRow, maxCol),
+      ),
+    );
   }
 }
 
@@ -124,7 +150,13 @@ Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
   } else {
     // top bump
     path.lineTo(offsetX + width / 3, offsetY);
-    path.cubicTo(offsetX + width / 6, offsetY - bumpSize, offsetX + width / 6 * 5, offsetY - bumpSize, offsetX + width / 3 * 2, offsetY);
+    path.cubicTo(
+        offsetX + width / 6,
+        offsetY - bumpSize,
+        offsetX + width / 6 * 5,
+        offsetY - bumpSize,
+        offsetX + width / 3 * 2,
+        offsetY);
     path.lineTo(offsetX + width, offsetY);
   }
 
@@ -134,7 +166,13 @@ Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
   } else {
     // right bump
     path.lineTo(offsetX + width, offsetY + height / 3);
-    path.cubicTo(offsetX + width - bumpSize, offsetY + height / 6, offsetX + width - bumpSize, offsetY + height / 6 * 5, offsetX + width, offsetY + height / 3 * 2);
+    path.cubicTo(
+        offsetX + width - bumpSize,
+        offsetY + height / 6,
+        offsetX + width - bumpSize,
+        offsetY + height / 6 * 5,
+        offsetX + width,
+        offsetY + height / 3 * 2);
     path.lineTo(offsetX + width, offsetY + height);
   }
 
@@ -144,7 +182,13 @@ Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
   } else {
     // bottom bump
     path.lineTo(offsetX + width / 3 * 2, offsetY + height);
-    path.cubicTo(offsetX + width / 6 * 5, offsetY + height - bumpSize, offsetX + width / 6, offsetY + height - bumpSize, offsetX + width / 3, offsetY + height);
+    path.cubicTo(
+        offsetX + width / 6 * 5,
+        offsetY + height - bumpSize,
+        offsetX + width / 6,
+        offsetY + height - bumpSize,
+        offsetX + width / 3,
+        offsetY + height);
     path.lineTo(offsetX, offsetY + height);
   }
 
@@ -154,7 +198,13 @@ Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
   } else {
     // left bump
     path.lineTo(offsetX, offsetY + height / 3 * 2);
-    path.cubicTo(offsetX - bumpSize, offsetY + height / 6 * 5, offsetX - bumpSize, offsetY + height / 6, offsetX, offsetY + height / 3);
+    path.cubicTo(
+        offsetX - bumpSize,
+        offsetY + height / 6 * 5,
+        offsetX - bumpSize,
+        offsetY + height / 6,
+        offsetX,
+        offsetY + height / 3);
     path.close();
   }
 

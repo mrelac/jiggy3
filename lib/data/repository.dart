@@ -8,8 +8,8 @@ import 'package:flutter/widgets.dart';
 import 'package:jiggy3/data/jiggy_filesystem.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
+import 'package:jiggy3/models/puzzle_piece.dart';
 import 'package:jiggy3/services/image_service.dart';
-import 'package:jiggy3/utilities/image_utilities.dart';
 
 import 'database.dart';
 
@@ -64,21 +64,19 @@ class Repository {
     return (await DBProvider.db.getPuzzles());
   }
 
-  /// Create new puzzle from puzzle.name and puzzle.imageLocation, copy image
-  /// to device storage, fill out remainder of Puzzle fields, and return the
-  /// puzzle. NOTE: Does NOT add the puzzle to the database.
   static Future<Puzzle> createPuzzle(String name, String imageLocation) async {
+    String targetLocation = await JiggyFilesystem.createTargetImagePath(name);
     Uint8List sourceBytes =
         await ImageService.readImageBytesFromLocation(imageLocation);
-    String targetLocation = await JiggyFilesystem.createTargetImagePath(name);
-    Size size = await ImageUtils.getImageSize(Image.memory(sourceBytes));
-    await JiggyFilesystem.bytesImageSave(sourceBytes, File(targetLocation));
+    Size sourceSize = await ImageService.getImageSizeFromBytes(sourceBytes);
+    Uint8List fitBytes = await ImageService.fitImageBytesToDevice(sourceBytes);
+    Size fitSize = await ImageService.getImageSizeFromBytes(fitBytes);
+    await JiggyFilesystem.bytesImageSave(fitBytes, File(targetLocation));
+    print('fit image $sourceSize to $fitSize');
     final puzzle = Puzzle(
         name: name,
         imageLocation: targetLocation,
-        thumb: ImageService.resizeBytes(sourceBytes, THUMB_WIDTH),
-        imageHeight: size.height,
-        imageWidth: size.width);
+        thumb: ImageService.resizeBytes(sourceBytes, THUMB_WIDTH));
     return puzzle;
   }
 
@@ -110,12 +108,34 @@ class Repository {
     return await DBProvider.db.getPuzzleByName(name);
   }
 
+  static Future<Image> getPuzzleImage(String location) async {
+    Image image = Image.file(File(location));
+    Size size = await ImageService.getImageSize(image);
+    return Image.file(File(location), width: size.width, height: size.height);
+  }
+
   static Future<List<Puzzle>> getPuzzlesByAlbumId(int albumId) async {
     return await DBProvider.db.getPuzzlesByAlbumId(albumId);
   }
 
-  static Image getPuzzleImage(String location, double height, double width) {
-    return Image.file(File(location), width: width, height: height);
+  static Future<List<PuzzlePiece>> getPuzzlePieces(int puzzleId) async {
+    return (await DBProvider.db.getPuzzlePieces(puzzleId));
+  }
+
+  static Future<PuzzlePiece> insertPuzzlePiece(PuzzlePiece piece) async {
+    return await DBProvider.db.insertPuzzlePiece(piece);
+  }
+
+  static Future<void> updatePuzzlePieceLocked(
+      int puzzlePieceId, bool isLocked) async {
+    return await DBProvider.db
+        .updatePuzzlePiece(puzzlePieceId, locked: isLocked);
+  }
+
+  static Future<void> updatePuzzlePiecePosition(
+      int puzzlePieceId, int row, int col) async {
+    return await DBProvider.db
+        .updatePuzzlePiece(puzzlePieceId, row: row, col: col);
   }
 
   static Future<void> deletePuzzleImage(String location) async {
@@ -126,8 +146,6 @@ class Repository {
       {String name,
       Uint8List thumb,
       String imageLocation,
-      double imageWidth,
-      double imageHeight,
       Color imageColour,
       double imageOpacity,
       int maxPieces}) async {
@@ -135,8 +153,6 @@ class Repository {
         name: name,
         thumb: thumb,
         imageLocation: imageLocation,
-        imageWidth: imageWidth,
-        imageHeight: imageHeight,
         imageColour: imageColour,
         imageOpacity: imageOpacity,
         maxPieces: maxPieces);

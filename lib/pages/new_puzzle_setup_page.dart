@@ -5,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/services/image_service.dart';
-import 'package:jiggy3/services/puzzle_service.dart';
 
 class NewPuzzleSetupPage extends StatefulWidget {
   final Puzzle puzzle;
@@ -119,44 +118,56 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   Future<void> _onPlayPressed() async {
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
     Puzzle wp = widget.puzzle;
-    // Update _returned Puzzle as appropriate and save to database.
     _returnedPuzzle = wp.from;
-    _returnedPuzzle.maxPieces = _maxPieces;
-    if (_croppedImageFile != null) {
-      Puzzle p = await puzzleBloc.createPuzzle(wp.name, _croppedImageFile.path);
-      await puzzleBloc.deletePuzzleImage(wp.imageLocation);
-      _returnedPuzzle
-        ..imageLocation = p.imageLocation
-        ..thumb = p.thumb
-        ..imageWidth = p.imageWidth
-        ..imageHeight = p.imageHeight;
 
+    // If crop
+    // - delete old image
+    // - Create new, cropped image on device storage (different name)
+    // - Create a thumb
+    // - Update database with: maxPieces, thumb, and location
+    // Else
+    // - Update database with: maxPieces
+    // Endif
+    // Split puzzle into pieces using stream, one-at-a-time:
+    //    foreach piece
+    //     - create image piece
+    //     - add image piece to database
+    //     - put in sink for consumer
+    // Pop and return
+
+    if (_croppedImageFile != null) {
+      await puzzleBloc.deletePuzzleImage(wp.imageLocation);
+      Puzzle p = await puzzleBloc.createPuzzle(wp.name, _croppedImageFile.path);
+      _returnedPuzzle
+        ..maxPieces = _maxPieces
+        ..imageLocation = p.imageLocation
+        ..thumb = p.thumb;
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
+          maxPieces: _returnedPuzzle.maxPieces,
           imageLocation: _returnedPuzzle.imageLocation,
-          thumb: _returnedPuzzle.thumb,
-          imageWidth: _returnedPuzzle.imageWidth,
-          imageHeight: _returnedPuzzle.imageHeight);
+          thumb: _returnedPuzzle.thumb);
+    } else {
+      await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
+          maxPieces: _returnedPuzzle.maxPieces);
     }
 
-    _returnedPuzzle.piecesLoose
-      ..clear()
-      ..addAll(await PuzzleService.splitImageIntoPieces(
-          image: _returnedPuzzle.image,
-          imageHeight: _returnedPuzzle.imageHeight,
-          imageWidth: _returnedPuzzle.imageWidth,
-          numPieces: _returnedPuzzle.maxPieces,
-          deviceSize: MediaQuery.of(context).size));
+    // _returnedPuzzle.pieces
+    //   ..clear()
+    //   ..addAll(await PuzzleService.splitImageIntoPieces(
+    //       puzzleId: _returnedPuzzle.id,
+    //       image: _returnedPuzzle.image,
+    //       imageHeight: _returnedPuzzle.imageHeight,
+    //       imageWidth: _returnedPuzzle.imageWidth,
+    //       numPieces: _returnedPuzzle.maxPieces,
+    //       deviceSize: MediaQuery.of(context).size));
 
-    await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
-        maxPieces: _returnedPuzzle.piecesLoose.length);
-
-    print('piecesLoose count: ${_returnedPuzzle.piecesLoose.length}');
-
-
+    print('pieces count: ${_returnedPuzzle.pieces.length}');
+    print('pieces locked count: ${_returnedPuzzle.numLocked}');
 
     // FIXME TODO: INSERT piecesLoose INTO DATABASE!
-
-
+//     puzzleBloc.addPuzzlePiece(PuzzlePiece(
+// asdfasdfasdfasdf
+//     ));
 
     _onWillPop();
   }

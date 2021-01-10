@@ -48,6 +48,13 @@ class AppBarActions {
           iconSize: 40,
           icon: Icon(Icons.add_photo_alternate),
           onPressed: () async {
+
+            // FIXME After using FilePicker, check for image file extension and convert image to .jpg if needed.
+
+            // FIXME ImagePicker doesn't handle .png correctly. Treats it like a jpg,
+            // FIXME recommendation below is to use FilePicker instead.
+            //       then fails because 'Start Of Image marker not found'
+            // Check out: https://stackoverflow.com/questions/58998478/is-it-wrong-to-use-image-picker-in-flutter-for-png-file
             final pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
             if (pickedFile != null) {
               await bloc.createAndInsertPuzzle(pickedFile.path);

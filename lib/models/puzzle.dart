@@ -6,38 +6,27 @@ import 'package:flutter/material.dart';
 import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
 
-//enum PlayState { neverPlayed, inProgress, completed, notPlayable }
-
 // NOTE: EXECUTIVE DECISION: All puzzle images will be transformed to jpg,
-//                           regardless where they came from (e.g. network images - create jpg file), so ImageProvider is File
-//       EXECUTIVE DECISION: All puzzle image heights will be transformed to (portrait: 1024; landscape: 768)
-//       EXECUTIVE DECISION: All puzzle image widths will be transformed to height * aspectRatio
+//       regardless where they came from (e.g. network images - create jpg file), so ImageProvider is File
 
 class Puzzle {
   int id;
   String name;
   Uint8List thumb;
   String imageLocation;
-  double imageWidth;
-  double imageHeight;
   Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, IMAGE_OPACITY_CLEAR);
   double imageOpacity = IMAGE_OPACITY_CLEAR;
+  Image _image;
 
   // # of pieces locked to win game. -1 means 'Game not yet started'.
   int maxPieces = -1;
-  final piecesLocked = <PuzzlePiece>[]; // Correctly-placed pieces
-  final piecesLoose = <PuzzlePiece>[]; // Unplayed pieces
+  final pieces = <PuzzlePiece>[];
 
-  bool get isPortrait => imageHeight < imageWidth;
+  int get numLocked => pieces.where((p) => p.locked).toList().length;
 
-  FileImage get fileImage => image.image as FileImage;
-
-  Image _image;
-
-  Image get image {
+  Future<Image> get image async {
     if (_image == null) {
-      _image =
-          Repository.getPuzzleImage(imageLocation, imageHeight, imageWidth);
+      _image = await Repository.getPuzzleImage(imageLocation);
     }
     return _image;
   }
@@ -49,8 +38,6 @@ class Puzzle {
       @required this.name,
       @required this.thumb,
       @required this.imageLocation,
-      @required this.imageWidth,
-      @required this.imageHeight,
       imageColour,
       imageOpacity,
       maxPieces}) {
@@ -65,8 +52,6 @@ class Puzzle {
         id = json['id'],
         name = json['name'],
         imageLocation = json['image_location'],
-        imageWidth = json['image_width'],
-        imageHeight = json['image_height'],
         imageOpacity = json['image_opacity'] {
     if (json['max_pieces'] != null) {
       this.maxPieces = json['max_pieces'];
@@ -89,8 +74,6 @@ class Puzzle {
         name: this.name,
         thumb: this.thumb,
         imageLocation: this.imageLocation,
-        imageWidth: this.imageWidth,
-        imageHeight: this.imageHeight,
         imageColour: this.imageColour,
         imageOpacity: this.imageOpacity,
         maxPieces: this.maxPieces);
@@ -109,14 +92,13 @@ class Puzzle {
   @override
   String toString() {
     return 'Puzzle{id: $id, name: $name, imageLocation: $imageLocation, '
-        'imageWidth: $imageWidth, imageHeight: $imageHeight, '
         'maxPieces: $maxPieces}';
   }
 
   PlayState get playState {
     if (maxPieces == -1) {
       return PlayState.neverPlayed;
-    } else if (piecesLocked.length == maxPieces) {
+    } else if (numLocked == maxPieces) {
       return PlayState.completed;
     } else {
       return PlayState.inProgress;

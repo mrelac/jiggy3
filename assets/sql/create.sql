@@ -25,8 +25,6 @@ CREATE TABLE IF NOT EXISTS puzzle_piece(
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
   puzzle_id        INTEGER NOT NULL,
   image_bytes      BLOB    NOT NULL,
-  image_width      REAL    NOT NULL,
-  image_weight     REAL    NOT NULL,
   locked           INTEGER NOT NULL,
   row              INTEGER NOT NULL,
   col              INTEGER NOT NULL,

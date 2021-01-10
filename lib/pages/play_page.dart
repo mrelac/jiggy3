@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jiggy3/models/puzzle.dart';
+import 'package:jiggy3/pages/chooser_page.dart';
 
 class PlayPage extends StatefulWidget {
+  static const PIECE_SIZE_NO_PADDING = 48.0;
+  static const PIECE_SIZE_WITH_PADDING = 80.0;
   Puzzle puzzle;
 
   PlayPage(this.puzzle);
@@ -21,7 +24,9 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
   final hlvPadding = EdgeInsets.only(right: 16.0, bottom: 16.0, top: 12);
 
 // _elSize is the size of an element *with* padding
+  // FIXME Replace _elSize with PIECE_SIZE_NO_PADDING and PIECE_SIZE_WITH_PADDING.
   final Size _elSize = Size(80.0, 80.0);
+
 
   Color _colourValue;
   bool _isReady = false;
@@ -94,9 +99,9 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
     _colourValue = puzzle.imageColour;
     _cropRequested =
         new ValueNotifier<bool>(false); // FIXME: Moved to PuzzleSizeChooser
-
+    Image image = await puzzle.image;
     setState(() {
-      _image = puzzle.image.image;
+      _image = image.image;
       _isReady = true;
     });
   }
@@ -116,7 +121,6 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
   //     _numPiecesOverlay.markNeedsBuild();
   //   }
   // } //  @override
-
   Widget _horizStrip(BuildContext context) {
     final lvWidth = MediaQuery.of(context).size.bottomRight(Offset.zero).dx -
         _elSize.width -
@@ -185,12 +189,12 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
   Widget _listView(BuildContext context, Axis axis) {
     return ListView(
       scrollDirection: axis,
-      children: List.generate(widget.puzzle.piecesLoose.length, (index) {
+      children: List.generate(widget.puzzle.pieces.length, (index) {
         return Padding(
           padding: const EdgeInsets.all(4.0),
           child: Image(
             fit: BoxFit.fill,
-            image: widget.puzzle.piecesLoose[index].image.image,
+            image: widget.puzzle.pieces[index].image.image,
           ),
         );
       }),
@@ -230,16 +234,17 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
     }
 
     SystemChrome.setEnabledSystemUIOverlays([]); // Hide top status bar
-    if (widget.puzzle.isPortrait) {
+    // The pieces strip is always on the device short side regardless of puzzle orientation
+    if (ChooserPage.deviceSize.width < ChooserPage.deviceSize.height) {
       return Scaffold(
         backgroundColor: Colors.grey[900],
-        body: _vertStrip(context),
+        body: _horizStrip(context),
         floatingActionButton: _buildFabMenu(context),
       );
     } else {
       return Scaffold(
         backgroundColor: Colors.grey[900],
-        body: _horizStrip(context),
+        body: _vertStrip(context),
         floatingActionButton: _buildFabMenu(context),
       );
     }
@@ -366,15 +371,15 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
   }
 
   // FIXME Moved to PuzzleSizeChooser
-  @deprecated
-  int _maxBoxesPerRow(double boxWidth, EdgeInsets padding) {
-    double bw = boxWidth + padding.left + padding.right;
-    double verticalStripWidth =
-        (widget.puzzle.isPortrait ?? true) ? _elSize.width : 0;
-    double dw = deviceSize.width - verticalStripWidth;
-
-    return (dw / bw).floor();
-  }
+  // @deprecated
+  // int _maxBoxesPerRow(double boxWidth, EdgeInsets padding) {
+  //   double bw = boxWidth + padding.left + padding.right;
+  //   double verticalStripWidth =
+  //       (widget.puzzle.isPortrait ?? true) ? _elSize.width : 0;
+  //   double dw = deviceSize.width - verticalStripWidth;
+  //
+  //   return (dw / bw).floor();
+  // }
 
   Offset _getPosition(GlobalKey key) {
     final RenderBox renderBox = key.currentContext.findRenderObject();

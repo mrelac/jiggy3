@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
+import 'package:jiggy3/models/puzzle_piece.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -131,18 +132,16 @@ SELECT a.* FROM album a
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle
-  (name, thumb, image_location, image_width, image_height,
+  (name, thumb, image_location,
    image_colour_r, image_colour_g, image_colour_b,
    image_opacity, max_pieces)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     print('Inserting puzzle ${puzzle.name}');
     puzzle.id = await db.rawInsert(insert, [
       puzzle.name,
       base64Encode(puzzle.thumb),
       puzzle.imageLocation,
-      puzzle.imageWidth,
-      puzzle.imageHeight,
       puzzle.imageColour.red,
       puzzle.imageColour.green,
       puzzle.imageColour.blue,
@@ -150,6 +149,63 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       puzzle.maxPieces
     ]);
     return puzzle;
+  }
+
+  Future<List<PuzzlePiece>> getPuzzlePieces(int puzzleId) async {
+    final db = await database;
+    const String select = 'SELECT * FROM puzzle_piece WHERE puzzle_id = ?';
+    return ((await db.rawQuery(select))
+        .map<PuzzlePiece>((json) => PuzzlePiece.fromMap(json))
+        .toList());
+  }
+
+  Future<PuzzlePiece> insertPuzzlePiece(PuzzlePiece piece) async {
+    final db = await database;
+    const String insert = '''
+INSERT INTO puzzle_piece
+  (puzzle_id, image_bytes, image_width, image_height, locked, row, col,
+   max_row, max_col)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+''';
+    piece.id = await db.rawInsert(insert, [
+      piece.puzzleId,
+      base64Encode(piece.imageBytes),
+      piece.imageWidth,
+      piece.imageHeight,
+      piece.locked,
+      piece.row,
+      piece.col,
+      piece.maxRow,
+      piece.maxCol
+    ]);
+    return piece;
+  }
+
+  Future<void> updatePuzzlePiece(int puzzlePieceId, {
+    bool locked: false, int row, int col}) async {
+    final db = await database;
+
+    final fields = <String>[];
+    final parms = <dynamic>[];
+
+    if (locked != null) {
+      fields.add('locked = ?');
+      parms.add(locked ? 1 : 0);
+    }
+    if (row != null) {
+      fields.add('row = ?');
+      parms.add(row);
+    }
+    if (col != null) {
+      fields.add('col = ?');
+      parms.add(col);
+    }
+    parms.add(puzzlePieceId);
+
+    final String update =
+        'UPDATE puzzle_piece SET ' + fields.join(",") + ' WHERE id = ?';
+
+    await db.rawUpdate(update, parms);
   }
 
   /// Deletes puzzle using puzzle id. Removes binding, if any, first.
@@ -189,8 +245,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       {String name,
       Uint8List thumb,
       String imageLocation,
-      double imageWidth,
-      double imageHeight,
       Color imageColour,
       double imageOpacity,
       int maxPieces}) async {
@@ -209,14 +263,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     if (imageLocation != null) {
       fields.add('image_location = ?');
       parms.add(imageLocation);
-    }
-    if (imageWidth != null) {
-      fields.add('image_width = ?');
-      parms.add(imageWidth);
-    }
-    if (imageHeight != null) {
-      fields.add('image_height = ?');
-      parms.add(imageHeight);
     }
     if (imageColour != null) {
       fields.add('image_colour_r = ?');
@@ -315,8 +361,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     name TEXT NOT NULL UNIQUE,
     thumb BLOB,
     image_location TEXT NOT NULL,
-    image_width REAL,
-    image_height REAL,
     image_colour_r INTEGER,
     image_colour_g INTEGER,
     image_colour_b INTEGER,
@@ -332,7 +376,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     puzzle_id INTEGER NOT NULL,
     image_bytes BLOB NOT NULL,
     image_width REAL NOT NULL,
-    image_weight REAL NOT NULL,
+    image_height REAL NOT NULL,
     locked INTEGER NOT NULL,
     row INTEGER NOT NULL,
     col INTEGER NOT NULL,
