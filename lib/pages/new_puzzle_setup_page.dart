@@ -15,11 +15,6 @@ class NewPuzzleSetupPage extends StatefulWidget {
 }
 
 class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
-  final _maxPiecesChoices = <int>[
-    1, 2, 3, 4, 5, 8, 12, 50, 77, 96, 140, 200, 234, 336, 400, 432, 512, 756, 1024,
-
-    // 2, 6, 12, 48, 70, 88, 140, 200, 234, 336, 400, 432, 512, 756, 1024,
-  ];
   File _croppedImageFile;
   int _maxPieces;
   Puzzle _returnedPuzzle;
@@ -66,13 +61,14 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   );
 
   Widget _puzzleSizes() {
+    List<RC> maxPieces = _computeMaxPieces();
     return Center(
       child: GridView.extent(
         shrinkWrap: true,
         maxCrossAxisExtent: 100.0,
         childAspectRatio: 1.4,
-        children: List.generate(_maxPiecesChoices.length,
-            (index) => _puzzleSizeButton(_maxPiecesChoices[index])),
+        children: List.generate(maxPieces.length,
+            (index) => _puzzleSizeButton(maxPieces[index].row * maxPieces[index].col)),
       ),
     );
   }
@@ -225,4 +221,28 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
     Navigator.pop(context, _returnedPuzzle);
     return Future.value(false);
   }
+
+  /// Generates a list of row, col values that best fit the device coordinates
+  List<RC> _computeMaxPieces() {
+    final maxPieces = <RC>[
+      RC(4, 3),     //   12
+      RC(8, 6),     //   48
+      RC(12, 9),    //  108
+      RC(16, 12),   //  192
+      RC(20, 15),   //  300
+      RC(24, 18),   //  432
+      RC(32, 24),   //  768
+      RC(36, 27),   //  972
+      RC(40, 30),   // 1200
+      RC(44, 33),   // 1452
+    ];
+    return maxPieces;
+  }
+}
+
+class RC {
+  int row;
+  int col;
+
+  RC(this.row, this.col);
 }
