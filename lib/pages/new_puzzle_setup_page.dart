@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
+import 'package:jiggy3/models/rc.dart';
 import 'package:jiggy3/services/image_service.dart';
 
 class NewPuzzleSetupPage extends StatefulWidget {
@@ -16,7 +17,7 @@ class NewPuzzleSetupPage extends StatefulWidget {
 
 class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   File _croppedImageFile;
-  int _maxPieces;
+  RC _maxPieces;
   Puzzle _returnedPuzzle;
   final _sizeBoxPadding = EdgeInsets.all(8.0);
 
@@ -31,7 +32,7 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
           _puzzleName(),
           _puzzleSizeChooser,
           _puzzleSizes(),
-          _crop(),
+          if (_maxPieces != null) _crop(),
           if (_maxPieces != null) _play()
         ]),
       ),
@@ -67,13 +68,13 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
         shrinkWrap: true,
         maxCrossAxisExtent: 100.0,
         childAspectRatio: 1.4,
-        children: List.generate(maxPieces.length,
-            (index) => _puzzleSizeButton(maxPieces[index].row * maxPieces[index].col)),
+        children: List.generate(
+            maxPieces.length, (index) => _puzzleSizeButton(maxPieces[index])),
       ),
     );
   }
 
-  Widget _puzzleSizeButton(int puzzleSize) {
+  Widget _puzzleSizeButton(RC puzzleSize) {
     return ButtonTheme(
       child: RaisedButton(
         onPressed: () => setState(() => _maxPieces = puzzleSize),
@@ -81,11 +82,11 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
         color: Colors.grey[700],
         padding: _sizeBoxPadding,
         child: Container(
-          decoration: _puzzleSizeDecoration(puzzleSize),
+          decoration: _puzzleSizeDecoration(puzzleSize.row * puzzleSize.col),
           child: Center(
               child: Padding(
             padding: const EdgeInsets.all(6.0),
-            child: Text('${puzzleSize.toString()}',
+            child: Text('${(puzzleSize.row * puzzleSize.col).toString()}',
                 style: TextStyle(fontSize: 25)),
           )),
         ),
@@ -116,26 +117,11 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
     Puzzle wp = widget.puzzle;
     _returnedPuzzle = wp.from;
 
-    // If crop
-    // - delete old image
-    // - Create new, cropped image on device storage (different name)
-    // - Create a thumb
-    // - Update database with: maxPieces, thumb, and location
-    // Else
-    // - Update database with: maxPieces
-    // Endif
-    // Split puzzle into pieces using stream, one-at-a-time:
-    //    foreach piece
-    //     - create image piece
-    //     - add image piece to database
-    //     - put in sink for consumer
-    // Pop and return
-
     if (_croppedImageFile != null) {
       await puzzleBloc.deletePuzzleImage(wp.imageLocation);
       Puzzle p = await puzzleBloc.createPuzzle(wp.name, _croppedImageFile.path);
       _returnedPuzzle
-        ..maxPieces = _maxPieces
+        ..maxPieces = _maxPieces.row * _maxPieces.col
         ..imageLocation = p.imageLocation
         ..thumb = p.thumb;
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
@@ -143,28 +129,12 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
           imageLocation: _returnedPuzzle.imageLocation,
           thumb: _returnedPuzzle.thumb);
     } else {
+      _returnedPuzzle.maxPieces = _maxPieces.row * _maxPieces.col;
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
           maxPieces: _returnedPuzzle.maxPieces);
     }
 
-    // _returnedPuzzle.pieces
-    //   ..clear()
-    //   ..addAll(await PuzzleService.splitImageIntoPieces(
-    //       puzzleId: _returnedPuzzle.id,
-    //       image: _returnedPuzzle.image,
-    //       imageHeight: _returnedPuzzle.imageHeight,
-    //       imageWidth: _returnedPuzzle.imageWidth,
-    //       numPieces: _returnedPuzzle.maxPieces,
-    //       deviceSize: MediaQuery.of(context).size));
-
-    print('pieces count: ${_returnedPuzzle.pieces.length}');
-    print('pieces locked count: ${_returnedPuzzle.numLocked}');
-
-    // FIXME TODO: INSERT piecesLoose INTO DATABASE!
-//     puzzleBloc.addPuzzlePiece(PuzzlePiece(
-// asdfasdfasdfasdf
-//     ));
-
+    puzzleBloc.splitImageIntoPieces(_returnedPuzzle, _maxPieces);
     _onWillPop();
   }
 
@@ -223,26 +193,20 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   }
 
   /// Generates a list of row, col values that best fit the device coordinates
+  /// in landscape. The row and column can be swapped later when needed if the
+  /// image to be split is portrait, so don't worry about orientation here.
   List<RC> _computeMaxPieces() {
-    final maxPieces = <RC>[
-      RC(4, 3),     //   12
-      RC(8, 6),     //   48
-      RC(12, 9),    //  108
-      RC(16, 12),   //  192
-      RC(20, 15),   //  300
-      RC(24, 18),   //  432
-      RC(32, 24),   //  768
-      RC(36, 27),   //  972
-      RC(40, 30),   // 1200
-      RC(44, 33),   // 1452
+    return <RC>[
+      RC(3, 4),   //   12
+      RC(6, 8),   //   48
+      RC(9, 12),  //  108
+      RC(12, 16), //  192
+      RC(15, 20), //  300
+      RC(18, 24), //  432
+      RC(24, 32), //  768
+      RC(27, 36), //  972
+      RC(30, 40), // 1200
+      RC(33, 44), // 1452
     ];
-    return maxPieces;
   }
-}
-
-class RC {
-  int row;
-  int col;
-
-  RC(this.row, this.col);
 }

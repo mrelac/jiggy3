@@ -46,7 +46,13 @@ class DBProvider {
     print("");
     print('Dumping table "$tableName"');
     for (var json in jsonResults) {
-      print(json);
+      if (tableName == 'puzzle') {
+        print(Puzzle.fromMap(json));
+      } else if (tableName == 'puzzle_piece') {
+        // Don't print anything
+      } else {
+        print(json);
+      }
     }
   }
 

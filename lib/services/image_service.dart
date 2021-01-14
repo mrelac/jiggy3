@@ -152,6 +152,13 @@ class ImageService {
         imglib.copyResize(imglib.decodeJpg(fullBytes), width: width));
   }
 
+  static Uint8List copyCrop(Uint8List imageBytes, int x, int y, int width, int height) {
+    return imglib.encodeJpg(
+        imglib.copyCrop(
+          imglib.decodeJpg(imageBytes), x, y, width, height
+        ));
+  }
+
 // USED FOR DEBUGGING
 // static Future<void> doit(Uint8List fullBytes) async {
 //   imglib.Image w1024 = imglib.copyResize(imglib.decodeJpg(fullBytes), width: 1024);

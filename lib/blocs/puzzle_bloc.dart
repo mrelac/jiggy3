@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/models/rc.dart';
+import 'package:jiggy3/services/image_service.dart';
 
 // FIXME FIXME FIXME This class needs work
 
@@ -31,25 +33,6 @@ class PuzzleBloc extends Cubit<Puzzle> {
     _puzzlePiecesStream.close();
   }
 
-  // /// Crop puzzle image. Returns null if crop was canceled by the user; else:
-  // /// - Creates a new, cropped image from the original image
-  // /// - Uses the original name suffixed numerically to make the name unique
-  // /// - Inserts the cropped puzzle into the database
-  // /// - returns the new puzzle
-  // Future<Puzzle> cropImageAndCreateNewPuzzle(Puzzle puzzle) async {
-  //   File croppedFile = await ImageService.cropImageDialog(
-  //       File(puzzle.imageLocation));
-  //   if (croppedFile == null) {
-  //     return null;
-  //   }
-  //   List<String> excludedNames = ((await Repository.getPuzzles())
-  //       .map((p) => p.name)).toList();
-  //   String name = Utils.generateUniqueName(puzzle.name, excludedNames);
-  //   Puzzle newPuzzle = await Repository.createPuzzle(
-  //       name, puzzle.imageLocation);
-  //   return newPuzzle;
-  // }
-
   Future<void> updatePuzzle(int id,
       {String name,
       Uint8List thumb,
@@ -69,8 +52,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
     getPuzzle();
   }
 
-  Future<Puzzle> createPuzzle(
-      String name, String imageLocation) async {
+  Future<Puzzle> createPuzzle(String name, String imageLocation) async {
     return await Repository.createPuzzle(name, imageLocation);
   }
 
@@ -96,6 +78,38 @@ class PuzzleBloc extends Cubit<Puzzle> {
     piece = await Repository.insertPuzzlePiece(piece);
     _pieces.add(piece);
     getPuzzlePieces();
+  }
+
+  /// The image must have a width and height. maxPieces will be swapped if
+  /// image is portrait (default maxpieces orientation is landscape)
+  void splitImageIntoPieces(Puzzle puzzle, RC maxPieces) async {
+    Image image = await puzzle.image;
+    print('BEFORE: ${maxPieces.toString()}');
+    if (image.width < image.height) {
+      maxPieces.swap();
+      print('image is portrait. Swapped maxPieces: ${maxPieces.toString()}');
+    }
+
+    int width = (image.width / maxPieces.col).floor();
+    int height = (image.height / maxPieces.row).floor();
+    Uint8List imageBytes = await ImageService.getImageBytes(image);
+    for (int x = 0; x < maxPieces.row; x++) {
+      for (int y = 0; y < maxPieces.col; y++) {
+        Uint8List pieceBytes =
+            ImageService.copyCrop(imageBytes, x, y, width, height);
+        PuzzlePiece piece = PuzzlePiece(
+            puzzleId: puzzle.id,
+            imageBytes: pieceBytes,
+            imageWidth: width.toDouble(),
+            imageHeight: height.toDouble(),
+            row: x,
+            col: y,
+            maxRow: maxPieces.row,
+            maxCol: maxPieces.col);
+        await Repository.insertPuzzlePiece(piece);
+        _puzzlePiecesStream.sink.add([piece]);
+      }
+    }
   }
 
   Future<void> updatePuzzlePieceLocked(int puzzlePieceId, bool isLocked) async {

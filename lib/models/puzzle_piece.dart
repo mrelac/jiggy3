@@ -54,7 +54,7 @@ class PuzzlePiece {
         col = json['col'],
         maxRow = json['max_row'],
         maxCol = json['max_col'],
-        image = Image.memory(json['image_bytes']);
+        image = Image.memory(base64Decode(json['image_bytes']));
 
 
   // @override
