@@ -24,12 +24,15 @@ class Puzzle {
 
   int get numLocked => pieces.where((p) => p.locked).toList().length;
 
-  Future<Image> get image async {
+  Image get image {
+    return _image;
+  }
+
+  Future<void> loadImage() async {
     if (_image == null) {
       _image = await Repository.getPuzzleImage(imageLocation);
     }
-    return _image;
-  }
+}
 
   static const double IMAGE_OPACITY_CLEAR = 1.0;
 

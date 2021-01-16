@@ -1,14 +1,12 @@
-
 import 'package:fab_circular_menu/fab_circular_menu.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
-import 'package:jiggy3/pages/chooser_page.dart';
+import 'package:jiggy3/models/puzzle_piece.dart';
 
 class PlayPage extends StatefulWidget {
-  static const PIECE_SIZE_NO_PADDING = 48.0;
-  static const PIECE_SIZE_WITH_PADDING = 80.0;
   Puzzle puzzle;
 
   PlayPage(this.puzzle);
@@ -16,36 +14,107 @@ class PlayPage extends StatefulWidget {
   _PlayPageState createState() => _PlayPageState();
 }
 
-// FIXME Don't know what the 'with WidgetsBindingObserver' is used to listen for.
-// FIXME I thought it was to detect and handle device orientation changes, but
-// FIXME I commented it out and the app still detects orientation changes!
-class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
-  final vlvPadding = EdgeInsets.only(bottom: 16.0, right: 16.0);
-  final hlvPadding = EdgeInsets.only(right: 16.0, bottom: 16.0, top: 12);
+class _PlayPageState extends State<PlayPage> {
+  Size _imgSize;
 
-// _elSize is the size of an element *with* padding
-  // FIXME Replace _elSize with PIECE_SIZE_NO_PADDING and PIECE_SIZE_WITH_PADDING.
-  final Size _elSize = Size(80.0, 80.0);
+  Size get imgSize => _imgSize;
 
+  bool get imgIsPortrait => imgSize.width < imgSize.height;
+
+  bool get imgIsLandscape => !imgIsPortrait;
+
+  Size get devSize => MediaQuery.of(context).size;
+
+  bool get devIsPortrait =>
+      MediaQuery.of(context).orientation == Orientation.portrait;
+
+  bool get devIsLandscape => !devIsPortrait;
+
+  final double _eW = 80.0; // Element width including padding
+  final double _eH = 80.0; // Element height including padding
+  final double _fW = 80.0; // fab width including padding
+  final double _fH = 80.0; // fab height including padding
+
+  double get eW => _eW;
+
+  double get eH => _eH;
+
+  double get fW => _fW;
+
+  double get fH => _fH;
+
+  double get dW => devSize.width;
+
+  double get dH => devSize.height;
+
+  double get iW => // Image Width
+      imgIsLandscape && devIsLandscape
+          ? dW - eW
+          : imgIsLandscape && devIsPortrait
+              ? dW
+              : imgIsPortrait && devIsLandscape
+                  ? _imgSize.width
+                  : imgIsPortrait && devIsPortrait
+                      ? dW
+                      : null;
+
+  double get iH => // Image Height
+      imgIsLandscape && devIsLandscape
+          ? dH
+          : imgIsLandscape && devIsPortrait
+              ? _imgSize.height
+              : imgIsPortrait && devIsLandscape
+                  ? dH
+                  : imgIsPortrait && devIsPortrait
+                      ? dH - eH
+                      : null;
+
+  EdgeInsets get iP => // Image Padding
+      imgIsLandscape && devIsLandscape
+          ? EdgeInsets.zero
+          : imgIsLandscape && devIsPortrait
+              ? EdgeInsets.only(top: dH - eH - iH)
+              : imgIsPortrait && devIsLandscape
+                  ? EdgeInsets.only(left: dW - eW - iW)
+                  : imgIsPortrait && devIsPortrait
+                      ? EdgeInsets.zero
+                      : null;
+
+  double get lW => // Listview Width
+      imgIsLandscape && devIsLandscape
+          ? eW
+          : imgIsLandscape && devIsPortrait
+              ? dW
+              : imgIsPortrait && devIsLandscape
+                  ? eW
+                  : imgIsPortrait && devIsPortrait
+                      ? dW - eW
+                      : null;
+
+  double get lH => // Listview Height
+      imgIsLandscape && devIsLandscape
+          ? dH - eH
+          : imgIsLandscape && devIsPortrait
+              ? eH
+              : imgIsPortrait && devIsLandscape
+                  ? dH
+                  : imgIsPortrait && devIsPortrait
+                      ? eH
+                      : null;
 
   Color _colourValue;
-  bool _isReady = false;
-  int _numPieces;
   Puzzle puzzle;
-  ImageProvider _image;
+  ImageProvider _imgProvider;
+  final _lvPieces = <Widget>[]; // These are the dressed pieces in the listview
 
   final GlobalKey<FabCircularMenuState> _fabKey = new GlobalKey();
   final GlobalKey _fabOpacityKey = new GlobalKey();
   final GlobalKey _fabColourKey = new GlobalKey();
-  final GlobalKey _numPiecesKey = new GlobalKey();
-
-  final GlobalKey _imageKey = new GlobalKey();
 
   OverlayEntry _colourOverlay;
   OverlayEntry _numPiecesOverlay;
   OverlayEntry _opacityOverlay;
 
-  ValueNotifier<bool> _cropRequested;
   ValueNotifier<double> _opacityFactor;
 
   void changeColor(Color color) {
@@ -59,202 +128,119 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
   @override
   void initState() {
     super.initState();
-    // This causes the named method to be called after the app layout is complete
-    // WidgetsBinding.instance.addObserver(this);
-    initialise();
-  }
 
-  // NOTES: This page is the play palette upon which an 'inProgress' puzzle is
-  //        played.
-  // Algorithm:
-  // onInit():
-  // - Set up PuzzleStream listener:
-  //   - puzzleBloc.loadPuzzlPieces():
-  //     - Load puzzle.piecesLocked and puzzle.piecesLoose
-  //     - put updated puzzle in sink
-  // - Set up PuzzlePieceStream listener:
-  //   - onDrag:
-  //     - Update puzzlePiece new row and column
-  //     if new position is correct position:
-  //     - update PuzzlePiece.locked field
-  //     - move puzzle.puzzlePiece from loose to locked list
-  //     - Update database: puzzlePiece.row, .col, puzzle.loose, puzzle.locked
-  //
-  // build():
-  // - paintImage() (e.g. update palette with image)
-  // - If hasData:
-  //   - return Widget play():
-  //     - paintImage(), loadLocked(), loadLoose(), loadFab()
-  //
-
-  Size get deviceSize => MediaQuery.of(context).size;
-
-  bool isPortrait() =>
-      MediaQuery.of(context).orientation == Orientation.portrait;
-
-  Future<void> initialise() async {
-    await _noOp(); // Required for .insert(_numPiecesOverlay) to work
     puzzle = widget.puzzle;
     _opacityFactor = new ValueNotifier<double>(puzzle.imageOpacity);
+    _imgSize = Size(widget.puzzle.image.width, widget.puzzle.image.height);
+    _imgProvider = widget.puzzle.image.image;
     _colourValue = puzzle.imageColour;
-    _cropRequested =
-        new ValueNotifier<bool>(false); // FIXME: Moved to PuzzleSizeChooser
-    Image image = await puzzle.image;
-    setState(() {
-      _image = image.image;
-      _isReady = true;
-    });
   }
 
-  // Needs to be called before _numPiecesOverlay can be .inserted
-  Future<void> _noOp() async {}
+  @override
+  Widget build(BuildContext context) {
+    // Listen to puzzlePieces and fill listview as they are available.
 
-  // Listens for device orientation changes
-  // @override
-  // void didChangeMetrics() {
-  //   double width = WidgetsBinding.instance.window.physicalSize.width;
-  //   double height = WidgetsBinding.instance.window.physicalSize.height;
-  //
-  //   String o = width < height ? "portrait" : "landscape";
-  //   print('orientation is $o');
-  //   if (_numPiecesOverlay != null) {
-  //     _numPiecesOverlay.markNeedsBuild();
-  //   }
-  // } //  @override
-  Widget _horizStrip(BuildContext context) {
-    final lvWidth = MediaQuery.of(context).size.bottomRight(Offset.zero).dx -
-        _elSize.width -
-        hlvPadding.horizontal;
-    final lvHeight = _elSize.height - hlvPadding.vertical;
-    final imgWidth = MediaQuery.of(context).size.bottomRight(Offset.zero).dx;
-    var imgHeight = MediaQuery.of(context).size.bottomRight(Offset.zero).dy -
-        lvHeight -
-        hlvPadding.vertical;
+    PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
+    puzzleBloc.puzzlesStream.listen((puzzle) async {
+      await puzzle.loadImage();
+    });
 
-//    print('_horizStrip: img:  ($imgWidth, $imgHeight)');
-//    print('_horizStrip: lv:   ($lvWidth, $lvHeight)');
-//    print('_horizStrip: menu: ($menuWidth, $menuHeight)');
-
-    return Center(
-      child: Column(children: [
-        _imgContainer(context, imgWidth, imgHeight),
-        Row(
-          children: [
-            _listviewContainer(
-                context, lvWidth, lvHeight, hlvPadding, Axis.horizontal),
-          ],
-        ),
-      ]),
+    return Scaffold(
+      backgroundColor: Colors.grey[900],
+      body: _buildBody(),
+      floatingActionButton: _buildFabMenu(context),
     );
   }
 
-  Widget _vertStrip(BuildContext context) {
-    final lvWidth = _elSize.width - vlvPadding.horizontal;
-    final lvHeight = MediaQuery.of(context).size.bottomRight(Offset.zero).dy -
-        _elSize.height -
-        vlvPadding.vertical;
-    final imgHeight = MediaQuery.of(context).size.bottomRight(Offset.zero).dy;
-    final imgWidth = MediaQuery.of(context).size.bottomRight(Offset.zero).dx -
-        lvWidth -
-        vlvPadding.horizontal;
+  Widget _buildBody() {
+    return imgIsLandscape && devIsLandscape
+        ? _landXland()
+        : imgIsLandscape && devIsPortrait
+            ? _landXport()
+            : imgIsPortrait && devIsLandscape
+                ? _portXland()
+                : imgIsPortrait && devIsPortrait
+                    ? _portXport()
+                    : null;
+  }
 
-//    print('_vertStrip: img:  ($imgWidth, $imgHeight)');
-//    print('_vertStrip: lv:   ($lvWidth, $lvHeight)');
-//    print('_vertStrip: menu: ($menuWidth, $menuHeight)');
-
-    return Row(children: [
-      _imgContainer(context, imgWidth, imgHeight),
-      Column(
-        children: [
-          _listviewContainer(
-              context, lvWidth, lvHeight, vlvPadding, Axis.vertical),
-        ],
-      ),
+  // Build imgLandscape x devLandscape layout
+  Widget _landXland() {
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _puzzleImage(),
+      _listView(),
     ]);
   }
 
-  Widget _listviewContainer(BuildContext context, double lvWidth,
-      double lvHeight, EdgeInsets lvPadding, Axis axis) {
-    return Padding(
-      padding: lvPadding,
-      child: Container(
-        color: _colourValue,
-        width: lvWidth,
-        height: lvHeight,
-        child: _listView(context, axis),
-      ),
-    );
+  // Build imgLandscape x devPortrait layout
+  Widget _landXport() {
+    return Column(children: [
+      _puzzleImage(),
+      _listView(),
+    ]);
   }
 
-  Widget _listView(BuildContext context, Axis axis) {
-    return ListView(
-      scrollDirection: axis,
-      children: List.generate(widget.puzzle.pieces.length, (index) {
-        return Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: Image(
-            fit: BoxFit.fill,
-            image: widget.puzzle.pieces[index].image.image,
-          ),
-        );
-      }),
-    );
+  // Build ingPortrait x devLandscape layout
+  Widget _portXland() {
+    return Row(children: [
+      _puzzleImage(),
+      _listView(),
+    ]);
   }
 
-  Widget _imgContainer(
-      BuildContext context, double imgWidth, double imgHeight) {
+  // Build imgPortrait x devPortrait layout
+  Widget _portXport() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _puzzleImage(),
+      _listView(),
+    ]);
+  }
+
+  Widget _puzzleImage() {
     return Container(
-      alignment: Alignment.topLeft,
+      width: iW,
+      height: iH,
+      padding: iP,
       child: Image(
-        key: _imageKey,
-        // FIXME probably not needed
         color: Color.fromRGBO(
             widget.puzzle.imageColour.red,
             widget.puzzle.imageColour.green,
             widget.puzzle.imageColour.blue,
             _opacityFactor.value),
         colorBlendMode: BlendMode.modulate,
-        width: imgWidth,
-        height: imgHeight,
-        image: _image,
+        fit: BoxFit.cover,
+        image: _imgProvider,
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (!_isReady) {
-      return Center(
-        child: Container(
-          height: 180.0,
-          width: 180.0,
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    SystemChrome.setEnabledSystemUIOverlays([]); // Hide top status bar
-    // The pieces strip is always on the device short side regardless of puzzle orientation
-    if (ChooserPage.deviceSize.width < ChooserPage.deviceSize.height) {
-      return Scaffold(
-        backgroundColor: Colors.grey[900],
-        body: _horizStrip(context),
-        floatingActionButton: _buildFabMenu(context),
-      );
-    } else {
-      return Scaffold(
-        backgroundColor: Colors.grey[900],
-        body: _vertStrip(context),
-        floatingActionButton: _buildFabMenu(context),
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    // WidgetsBinding.instance.removeObserver(this);
-    _closeOverlays();
-    super.dispose();
+  Widget _listView() {
+    PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
+    Stream<List<PuzzlePiece>> piecesStream = puzzleBloc.puzzlePiecesStream;
+    piecesStream.listen((pieces) {
+      pieces.forEach((piece) => _lvPieces.add(Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: Image.memory(piece.imageBytes, fit: BoxFit.fill),
+          )));
+    });
+    return StreamBuilder<Object>(
+        stream: puzzleBloc.puzzlePiecesStream,
+        initialData: [],
+        builder: (context, snapshot) {
+          return Padding(
+            padding: EdgeInsets.zero,
+            child: Container(
+              color: _colourValue,
+              width: lW,
+              height: lH,
+              child: ListView(
+                scrollDirection:
+                    devIsLandscape ? Axis.vertical : Axis.horizontal,
+                children: _lvPieces,
+              ),
+            ),
+          );
+        });
   }
 
   // FIXME Move this to new widget file PaletteFabMenu.
@@ -369,17 +355,6 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
               ),
             )));
   }
-
-  // FIXME Moved to PuzzleSizeChooser
-  // @deprecated
-  // int _maxBoxesPerRow(double boxWidth, EdgeInsets padding) {
-  //   double bw = boxWidth + padding.left + padding.right;
-  //   double verticalStripWidth =
-  //       (widget.puzzle.isPortrait ?? true) ? _elSize.width : 0;
-  //   double dw = deviceSize.width - verticalStripWidth;
-  //
-  //   return (dw / bw).floor();
-  // }
 
   Offset _getPosition(GlobalKey key) {
     final RenderBox renderBox = key.currentContext.findRenderObject();
@@ -504,8 +479,6 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
           ),
         ],
       ),
-      //          ),
-      //        ),
     );
   }
 
@@ -530,5 +503,11 @@ class _PlayPageState extends State<PlayPage> /*with WidgetsBindingObserver*/ {
   _closeOverlays() {
     _closeNumPieces();
     _closeSiders();
+  }
+
+  @override
+  void dispose() {
+    _closeOverlays();
+    super.dispose();
   }
 }

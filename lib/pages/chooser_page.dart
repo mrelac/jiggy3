@@ -71,6 +71,7 @@ class _ChooserPageState extends State<ChooserPage> {
   }
 
   StreamSubscription _albumStreamSub;
+
   @override
   Widget build(BuildContext context) {
     ChooserPage.deviceSize = MediaQuery.of(context).size;
@@ -195,6 +196,7 @@ class _ChooserPageState extends State<ChooserPage> {
 
   Future<void> _navigateToPlayPage(Puzzle puzzle) async {
     SystemChrome.setEnabledSystemUIOverlays([]);
+    await puzzle.loadImage();
     Puzzle update = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BlocProvider(

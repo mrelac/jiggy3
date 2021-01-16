@@ -62,6 +62,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
 
   Future<void> getPuzzle() async {
     _puzzle = await Repository.getPuzzleById(_puzzle.id);
+    await _puzzle.loadImage();
     if (_pieces == null) {
       _pieces = await Repository.getPuzzlePieces(_puzzle.id);
     }
