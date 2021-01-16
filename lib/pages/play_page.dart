@@ -1,16 +1,17 @@
 import 'package:fab_circular_menu/fab_circular_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/widgets/palette_fab_menu.dart';
 
 class PlayPage extends StatefulWidget {
-  Puzzle puzzle;
+  final Puzzle puzzle;
 
   PlayPage(this.puzzle);
 
+  @override
   _PlayPageState createState() => _PlayPageState();
 }
 
@@ -19,9 +20,9 @@ class _PlayPageState extends State<PlayPage> {
 
   Size get imgSize => _imgSize;
 
-  bool get imgIsPortrait => imgSize.width < imgSize.height;
-
   bool get imgIsLandscape => !imgIsPortrait;
+
+  bool get imgIsPortrait => imgSize.width < imgSize.height;
 
   Size get devSize => MediaQuery.of(context).size;
 
@@ -130,10 +131,10 @@ class _PlayPageState extends State<PlayPage> {
     super.initState();
 
     puzzle = widget.puzzle;
-    _opacityFactor = new ValueNotifier<double>(puzzle.imageOpacity);
     _imgSize = Size(widget.puzzle.image.width, widget.puzzle.image.height);
     _imgProvider = widget.puzzle.image.image;
     _colourValue = puzzle.imageColour;
+    _opacityFactor = new ValueNotifier<double>(puzzle.imageOpacity);
   }
 
   @override
@@ -148,8 +149,29 @@ class _PlayPageState extends State<PlayPage> {
     return Scaffold(
       backgroundColor: Colors.grey[900],
       body: _buildBody(),
-      floatingActionButton: _buildFabMenu(context),
+      floatingActionButton: PaletteFabMenu(_colourValue, _opacityFactor,
+          onColourChanged, onImageOpacityChanged, onImageOpacityChangEnd),
     );
+  }
+
+  void onColourChanged(Color colour) {
+    setState(() {
+      _colourValue = colour;
+      widget.puzzle.imageColour = colour;
+      _updatePuzzle();
+    });
+  }
+
+  void onImageOpacityChanged(double value) {
+    setState(() {
+      _opacityFactor.value = value;
+      widget.puzzle.imageOpacity = value;
+    });
+  }
+
+  void onImageOpacityChangEnd(double value) {
+    print('Done changing slider. value: $value');
+    _updatePuzzle();
   }
 
   Widget _buildBody() {
@@ -243,243 +265,10 @@ class _PlayPageState extends State<PlayPage> {
         });
   }
 
-  // FIXME Move this to new widget file PaletteFabMenu.
-  @deprecated
-  OverlayEntry _createOpacityOverlay() {
-    var size = _getSize(_fabOpacityKey);
-    if (size == null) {
-      return null;
-    }
-    var position = _getPosition(_fabOpacityKey);
-    double width = 550.0;
-    double left = position.dx - 23 - width;
-    if (left < 0) {
-      width += left;
-      left = 0;
-    }
-    return OverlayEntry(
-        builder: (overlayContext) => Positioned(
-            left: left,
-            width: width,
-            top: position.dy + 10,
-            height: size.height - 20,
-            child: Material(
-              elevation: 4.0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: Text('Opacity'),
-                  ),
-                  _createOpacitySlider(overlayContext),
-                ],
-              ),
-            )));
-  }
-
-  // FIXME Move this to new widget file PaletteFabMenu.
-  @deprecated
-  Widget _createOpacitySlider(BuildContext context) {
-    return ValueListenableBuilder<double>(
-        valueListenable: _opacityFactor,
-        builder: (context, value, child) {
-          return Slider(
-            value: _opacityFactor.value,
-            min: 0.0,
-            max: 1.0,
-            onChanged: (double value) {
-              setState(() {
-                _opacityFactor.value = value;
-                widget.puzzle.imageOpacity = value;
-              });
-            },
-            onChangeEnd: (double value) {
-              print('Done changing slider. value: $value');
-              _updatePuzzle();
-            },
-          );
-        });
-  }
-
   // FIXME FIXME FIXME
   void _updatePuzzle() async {
     print('FIXME: PERSIST ME!');
     // await _persist.upsertPuzzle(widget.puzzle);
-  }
-
-  // FIXME Move this to new widget file PaletteFabMenu.
-  @deprecated
-  OverlayEntry _createColourOverlay() {
-    var size = _getSize(_fabColourKey);
-    if (size == null) {
-      return null;
-    }
-    var position = _getPosition(_fabColourKey);
-    double height = 130.0;
-    double width = 550.0;
-    double left = position.dx - 23 - width;
-    if (left < 0) {
-      width += left;
-      left = 0;
-    }
-
-    return OverlayEntry(
-        builder: (context) => Positioned(
-            left: left,
-            width: width,
-            height: height,
-            top: position.dy - 58,
-            child: Material(
-              elevation: 4.0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: ColorPicker(
-                      pickerColor: _colourValue,
-                      onColorChanged: changeColor,
-                      colorPickerWidth: width,
-                      pickerAreaHeightPercent: 0.1,
-                      enableAlpha: false,
-                      displayThumbColor: false,
-                      showLabel: false,
-                      paletteType: PaletteType.hsv,
-                      pickerAreaBorderRadius: const BorderRadius.only(
-                        topLeft: const Radius.circular(2.0),
-                        topRight: const Radius.circular(2.0),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )));
-  }
-
-  Offset _getPosition(GlobalKey key) {
-    final RenderBox renderBox = key.currentContext.findRenderObject();
-    return renderBox.localToGlobal(Offset.zero);
-  }
-
-  Size _getSize(GlobalKey key) {
-    final RenderBox renderBox = key.currentContext?.findRenderObject();
-    return renderBox?.size;
-  }
-
-  // FIXME Move this to new widget file PaletteFabMenu.
-  @deprecated
-  Widget _buildFabMenu(BuildContext context) {
-    final primaryColor = Theme.of(context).primaryColor;
-
-    return Builder(
-      builder: (context) => FabCircularMenu(
-        key: _fabKey,
-        // Cannot be `Alignment.center`
-        alignment: Alignment.bottomRight,
-        ringColor: Colors.white.withAlpha(25),
-        ringDiameter: 600.0,
-        ringWidth: 100.0,
-        fabSize: 60.0,
-        fabElevation: 8.0,
-
-        // Also can use specific color based on whether
-        // the menu is open or not:
-        // fabOpenColor: Colors.white
-        // fabCloseColor: Colors.white
-        // These properties take precedence over fabColor
-        fabColor: Colors.indigo,
-        fabOpenIcon: Icon(Icons.menu, color: primaryColor),
-        fabCloseIcon: Icon(Icons.close, color: primaryColor),
-        fabMargin: const EdgeInsets.all(8.0),
-        animationDuration: const Duration(milliseconds: 800),
-        animationCurve: Curves.easeInOutCirc,
-        onDisplayChange: (isOpen) {
-          print('The menu is ${isOpen ? "open" : "closed"}');
-          if (!isOpen) {
-            _closeSiders();
-          }
-        },
-        children: <Widget>[
-          Container(
-            child: Tooltip(
-              message: 'Opacity',
-              child: RawMaterialButton(
-                key: _fabOpacityKey,
-                onPressed: () {
-                  if (_opacityOverlay == null) {
-                    _opacityOverlay = _createOpacityOverlay();
-                    Overlay.of(context).insert(_opacityOverlay);
-                  } else {
-                    _opacityOverlay.remove();
-                    _opacityOverlay = null;
-                  }
-//              fabKey.currentState.close();
-                },
-                shape: CircleBorder(),
-                splashColor: Colors.red,
-                fillColor: Colors.blueAccent,
-                padding: const EdgeInsets.all(24.0),
-                child: Icon(Icons.opacity, color: Colors.white, size: 30.0),
-              ),
-            ),
-          ),
-          Container(
-            child: Tooltip(
-              message: 'Background colour',
-              child: RawMaterialButton(
-                key: _fabColourKey,
-                onPressed: () {
-                  print("Choose background colour");
-                  if (_colourOverlay == null) {
-                    _colourOverlay = _createColourOverlay();
-                    Overlay.of(context).insert(_colourOverlay);
-                  } else {
-                    _colourOverlay.remove();
-                    _colourOverlay = null;
-                  }
-                },
-                shape: CircleBorder(),
-                splashColor: Colors.red,
-                fillColor: Colors.green,
-                padding: const EdgeInsets.all(24.0),
-                child: Icon(Icons.colorize, color: Colors.white, size: 30.0),
-              ),
-            ),
-          ),
-          Container(
-            child: Tooltip(
-              message: 'Edges',
-              child: RawMaterialButton(
-                onPressed: () {
-                  print("Toggle show edge pieces");
-                  _fabKey.currentState.close();
-                },
-                shape: CircleBorder(),
-                splashColor: Colors.red,
-                fillColor: Colors.orange,
-                padding: const EdgeInsets.all(24.0),
-                child: Icon(Icons.extension, color: Colors.white, size: 30.0),
-              ),
-            ),
-          ),
-          Container(
-            child: Tooltip(
-              message: 'Preview',
-              child: RawMaterialButton(
-                onPressed: () {
-                  print("Toggle show preview");
-                },
-                shape: CircleBorder(),
-                splashColor: Colors.red,
-                fillColor: Colors.yellowAccent,
-                padding: const EdgeInsets.all(24.0),
-                child: Icon(Icons.all_out, color: Colors.black, size: 30.0),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   _closeNumPieces() {
