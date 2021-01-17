@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS puzzle_piece(
   puzzle_id        INTEGER NOT NULL,
   image_bytes      BLOB    NOT NULL,
   locked           INTEGER NOT NULL,
+  played           INTEGER NOT NULL, -- bool: 1 = draw on palette; 2 = put in listview
   row              INTEGER NOT NULL,
   col              INTEGER NOT NULL,
   max_row          INTEGER NOT NULL,

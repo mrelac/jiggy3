@@ -84,7 +84,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
   /// The image must have a width and height. maxPieces will be swapped if
   /// image is portrait (default maxpieces orientation is landscape)
   void splitImageIntoPieces(Puzzle puzzle, RC maxPieces) async {
-    Image image = await puzzle.image;
+    Image image = puzzle.image;
     print('BEFORE: ${maxPieces.toString()}');
     if (image.width < image.height) {
       maxPieces.swap();
@@ -118,6 +118,14 @@ class PuzzleBloc extends Cubit<Puzzle> {
     _pieces
         .where((p) => p.id == puzzlePieceId)
         .map((p2) => p2.locked = isLocked);
+    _puzzlePiecesStream.add(_pieces);
+  }
+
+  Future<void> updatePuzzlePiecePlayed(int puzzlePieceId, bool isPlayed) async {
+    await Repository.updatePuzzlePiecePlayed(puzzlePieceId, isPlayed);
+    _pieces
+        .where((p) => p.id == puzzlePieceId)
+        .map((p2) => p2.played = isPlayed);
     _puzzlePiecesStream.add(_pieces);
   }
 

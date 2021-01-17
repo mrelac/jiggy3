@@ -99,7 +99,7 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
             width: width,
             child: Slider(
               value: widget.opacityFactor.value,
-              min: 0.0,
+              min: 0.2,
               max: 1.0,
               onChanged: widget.onImageOpacityChanged,
               onChangeEnd: widget.onImageOpacityChangeEnd,

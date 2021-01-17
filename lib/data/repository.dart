@@ -132,6 +132,12 @@ class Repository {
         .updatePuzzlePiece(puzzlePieceId, locked: isLocked);
   }
 
+  static Future<void> updatePuzzlePiecePlayed(
+      int puzzlePieceId, bool isPlayed) async {
+    return await DBProvider.db
+        .updatePuzzlePiece(puzzlePieceId, played: isPlayed);
+  }
+
   static Future<void> updatePuzzlePiecePosition(
       int puzzlePieceId, int row, int col) async {
     return await DBProvider.db

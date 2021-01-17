@@ -169,9 +169,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, row, col,
+  (puzzle_id, image_bytes, image_width, image_height, locked, played, row, col,
    max_row, max_col)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     piece.id = await db.rawInsert(insert, [
       piece.puzzleId,
@@ -179,6 +179,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       piece.imageWidth,
       piece.imageHeight,
       piece.locked,
+      piece.played,
       piece.row,
       piece.col,
       piece.maxRow,
@@ -188,7 +189,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   }
 
   Future<void> updatePuzzlePiece(int puzzlePieceId, {
-    bool locked: false, int row, int col}) async {
+    bool locked: false, bool played: false, int row, int col}) async {
     final db = await database;
 
     final fields = <String>[];
@@ -197,6 +198,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     if (locked != null) {
       fields.add('locked = ?');
       parms.add(locked ? 1 : 0);
+    }
+    if (played != null) {
+      fields.add('played = ?');
+      parms.add(played ? 1 : 0);
     }
     if (row != null) {
       fields.add('row = ?');
@@ -384,6 +389,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_width REAL NOT NULL,
     image_height REAL NOT NULL,
     locked INTEGER NOT NULL,
+    played INTEGER NOT NULL,
     row INTEGER NOT NULL,
     col INTEGER NOT NULL,
     max_row INTEGER NOT NULL,

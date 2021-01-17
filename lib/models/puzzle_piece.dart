@@ -10,7 +10,8 @@ class PuzzlePiece {
   final Uint8List imageBytes;
   final double imageWidth;
   final double imageHeight;
-  bool locked;
+  bool locked;  // true: piece is in its correct location.
+  bool played;  // true: draw on palette; false: put in listview
   int row;
   int col;
   final int maxRow;
@@ -26,6 +27,7 @@ class PuzzlePiece {
       this.imageWidth,
       this.imageHeight,
       this.locked: false,
+      this.played: false,
       this.row,
       this.col,
       this.maxRow,
@@ -39,23 +41,23 @@ class PuzzlePiece {
         assert(json['image_width'] != null),
         assert(json['image_height'] != null),
         assert(json['locked'] != null),
+        assert(json['played'] != null),
         assert(json['row'] != null),
         assert(json['col'] != null),
         assert(json['max_row'] != null),
         assert(json['max_col'] != null),
-
         id = json['id'],
         puzzleId = json['puzzle_id'],
         imageBytes = base64Decode(json['image_bytes']),
         imageWidth = json['image_width'],
         imageHeight = json['image_height'],
         locked = json['locked'] == 1 ? true : false,
+        played = json['played'] == 1 ? true : false,
         row = json['row'],
         col = json['col'],
         maxRow = json['max_row'],
         maxCol = json['max_col'],
         image = Image.memory(base64Decode(json['image_bytes']));
-
 
   // @override
 // FIXME Why is there a build widget in a model class?
