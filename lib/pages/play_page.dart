@@ -1,4 +1,3 @@
-import 'package:fab_circular_menu/fab_circular_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
@@ -108,10 +107,6 @@ class _PlayPageState extends State<PlayPage> {
   ImageProvider _imgProvider;
   final _lvPieces = <Widget>[]; // These are the dressed pieces in the listview
 
-  final GlobalKey<FabCircularMenuState> _fabKey = new GlobalKey();
-  final GlobalKey _fabOpacityKey = new GlobalKey();
-  final GlobalKey _fabColourKey = new GlobalKey();
-
   OverlayEntry _colourOverlay;
   OverlayEntry _numPiecesOverlay;
   OverlayEntry _opacityOverlay;
@@ -150,7 +145,10 @@ class _PlayPageState extends State<PlayPage> {
       backgroundColor: Colors.grey[900],
       body: _buildBody(),
       floatingActionButton: PaletteFabMenu(_colourValue, _opacityFactor,
-          onColourChanged, onImageOpacityChanged, onImageOpacityChangEnd),
+          onColourChanged: onColourChanged,
+          onColourChangeEnd: onColourChangeEnd,
+          onImageOpacityChanged: onImageOpacityChanged,
+          onImageOpacityChangeEnd: onImageOpacityChangEnd),
     );
   }
 
@@ -158,8 +156,11 @@ class _PlayPageState extends State<PlayPage> {
     setState(() {
       _colourValue = colour;
       widget.puzzle.imageColour = colour;
-      _updatePuzzle();
     });
+  }
+
+  void onColourChangeEnd(Color colour) {
+    _updatePuzzle();
   }
 
   void onImageOpacityChanged(double value) {
@@ -265,10 +266,9 @@ class _PlayPageState extends State<PlayPage> {
         });
   }
 
-  // FIXME FIXME FIXME
   void _updatePuzzle() async {
-    print('FIXME: PERSIST ME!');
-    // await _persist.upsertPuzzle(widget.puzzle);
+    BlocProvider.of<PuzzleBloc>(context).updatePuzzle(widget.puzzle.id,
+        imageColour: puzzle.imageColour, imageOpacity: puzzle.imageOpacity);
   }
 
   _closeNumPieces() {
