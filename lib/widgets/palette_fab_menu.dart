@@ -54,7 +54,7 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    _closeSliders();
+    closeSliders();
   }
 
   OverlayEntry _createOpacityOverlay() {
@@ -202,7 +202,7 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
                     'Colour $_originalColour changed to ${widget.colourValue}. Calling onColourChangeEnd');
                 widget.onColourChangeEnd(widget.colourValue);
               }
-              _closeSliders();
+              closeSliders();
             }
           },
           children: <Widget>[
@@ -291,26 +291,24 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
     );
   }
 
-  _closeSliders() {
+  closeSliders() {
     if (_opacityOverlay != null) {
+      if (widget.onImageOpacityChangeEnd != null)
+        widget.onImageOpacityChangeEnd;
       _opacityOverlay.remove();
       _opacityOverlay = null;
     }
     if (_colourOverlay != null) {
+      if (widget.onColourChangeEnd != null)
+        widget.onImageOpacityChangeEnd;
       _colourOverlay.remove();
       _colourOverlay = null;
     }
   }
 
   Future<bool> _onWillPop() {
-    _closeSliders();
+    closeSliders();
     Navigator.pop(context);
     return Future.value(false);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
   }
 }

@@ -17,6 +17,8 @@ class PlayPage extends StatefulWidget {
 class _PlayPageState extends State<PlayPage> {
   Size _imgSize;
 
+  PaletteFabMenu _paletteFabMenu;
+
   Size get imgSize => _imgSize;
 
   bool get imgIsLandscape => !imgIsPortrait;
@@ -107,10 +109,7 @@ class _PlayPageState extends State<PlayPage> {
   ImageProvider _imgProvider;
   final _lvPieces = <Widget>[]; // These are the dressed pieces in the listview
 
-  OverlayEntry _colourOverlay;
   OverlayEntry _numPiecesOverlay;
-  OverlayEntry _opacityOverlay;
-
   ValueNotifier<double> _opacityFactor;
 
   void changeColor(Color color) {
@@ -130,10 +129,16 @@ class _PlayPageState extends State<PlayPage> {
     _imgProvider = widget.puzzle.image.image;
     _colourValue = puzzle.imageColour;
     _opacityFactor = new ValueNotifier<double>(puzzle.imageOpacity);
+    _paletteFabMenu = PaletteFabMenu(_colourValue, _opacityFactor,
+        onColourChanged: onColourChanged,
+        onColourChangeEnd: onColourChangeEnd,
+        onImageOpacityChanged: onImageOpacityChanged,
+        onImageOpacityChangeEnd: onImageOpacityChangEnd);
   }
 
   @override
   Widget build(BuildContext context) {
+
     // Listen to puzzlePieces and fill listview as they are available.
 
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
@@ -144,11 +149,7 @@ class _PlayPageState extends State<PlayPage> {
     return Scaffold(
       backgroundColor: Colors.grey[900],
       body: _buildBody(),
-      floatingActionButton: PaletteFabMenu(_colourValue, _opacityFactor,
-          onColourChanged: onColourChanged,
-          onColourChangeEnd: onColourChangeEnd,
-          onImageOpacityChanged: onImageOpacityChanged,
-          onImageOpacityChangeEnd: onImageOpacityChangEnd),
+      floatingActionButton: _paletteFabMenu,
     );
   }
 
@@ -278,25 +279,8 @@ class _PlayPageState extends State<PlayPage> {
     }
   }
 
-  _closeSiders() {
-    if (_opacityOverlay != null) {
-      _opacityOverlay.remove();
-      _opacityOverlay = null;
-    }
-    if (_colourOverlay != null) {
-      _colourOverlay.remove();
-      _colourOverlay = null;
-    }
-  }
-
-  _closeOverlays() {
-    _closeNumPieces();
-    _closeSiders();
-  }
-
   @override
   void dispose() {
-    _closeOverlays();
     super.dispose();
   }
 }
