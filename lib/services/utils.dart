@@ -3,13 +3,14 @@ import 'package:intl/intl.dart';
 class Utils {
   static const DEFAULT_DATE_FORMAT_FILE = 'yyyy-MM-dd_HH.mm.ss';
   static const DEFAULT_DATE_FORMAT_DISPLAY = 'yyyy-MM-dd HH:mm:ss';
+  static const DEFAULT_TIIME_FORMAT = 'HH:mm:ss';
 
   // Prints a string with the given prefix, dateFormat, and date, if supplied.
   /// Defaults:
   ///   prefix: ''
   ///   dateFormat: DEFAULT_DATE_FORMAT_DISPLAY (e.g. yyyy-MM-dd HH:mm:ss)
   ///   date: current date and time
-  static void printTime({String prefix, String dateFormat, DateTime date}) {
+  static void printDateTime({String prefix, String dateFormat, DateTime date}) {
     print(createDateString(prefix: prefix, dateFormat: dateFormat, date: date));
   }
 
@@ -22,7 +23,7 @@ class Utils {
       {String prefix, String dateFormat, DateTime date}) {
     final formattedDate = DateFormat(dateFormat ?? DEFAULT_DATE_FORMAT_FILE)
         .format(date ?? DateTime.now());
-    return '${prefix ?? ""}_$formattedDate';
+    return '${prefix ?? ""}$formattedDate';
   }
 
   static String generateUniqueName(String prefix, List<String> excludedNames) {

@@ -133,8 +133,8 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
           maxPieces: _returnedPuzzle.maxPieces);
     }
-
-    puzzleBloc.splitImageIntoPieces(_returnedPuzzle, _maxPieces);
+    await _returnedPuzzle.loadImage();
+    await puzzleBloc.splitImageIntoPieces(_returnedPuzzle, _maxPieces);
     _onWillPop();
   }
 

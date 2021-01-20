@@ -8,12 +8,15 @@ import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
 import 'package:jiggy3/models/rc.dart';
 import 'package:jiggy3/services/image_service.dart';
+import 'package:jiggy3/services/utils.dart';
+
+import 'package:image/image.dart' as imglib;
 
 // FIXME FIXME FIXME This class needs work
 
 class PuzzleBloc extends Cubit<Puzzle> {
   PuzzleBloc(this._puzzle) : super(_puzzle) {
-    getPuzzlePieces();
+    loadPuzzlePieces();
   }
 
   Puzzle _puzzle;
@@ -49,7 +52,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
         imageColour: imageColour,
         imageOpacity: imageOpacity,
         maxPieces: maxPieces);
-    getPuzzle();
+    loadPuzzle();
   }
 
   Future<Puzzle> createPuzzle(String name, String imageLocation) async {
@@ -60,9 +63,10 @@ class PuzzleBloc extends Cubit<Puzzle> {
     await Repository.deletePuzzleImage(location);
   }
 
-  Future<void> getPuzzle() async {
+  Future<void> loadPuzzle() async {
     _puzzle = await Repository.getPuzzleById(_puzzle.id);
     await _puzzle.loadImage();
+    // FIXME I don't think puzzle needs to contain puzzlePieces. Delete this code?
     if (_pieces == null) {
       _pieces = await Repository.getPuzzlePieces(_puzzle.id);
     }
@@ -70,34 +74,44 @@ class PuzzleBloc extends Cubit<Puzzle> {
     _puzzlesStream.sink.add(_puzzle);
   }
 
-  Future<void> getPuzzlePieces() async {
+  Future<void> loadPuzzlePieces() async {
     _pieces = await Repository.getPuzzlePieces(_puzzle.id);
-    _puzzlePiecesStream.sink.add(_pieces);
+    if (_pieces.isNotEmpty) {
+      _puzzlePiecesStream.sink.add(_pieces);
+    }
   }
 
   Future<void> addPuzzlePiece(PuzzlePiece piece) async {
     piece = await Repository.insertPuzzlePiece(piece);
     _pieces.add(piece);
-    getPuzzlePieces();
+    loadPuzzlePieces();
   }
 
   /// The image must have a width and height. maxPieces will be swapped if
   /// image is portrait (default maxpieces orientation is landscape)
-  void splitImageIntoPieces(Puzzle puzzle, RC maxPieces) async {
+  Future<void> splitImageIntoPieces(Puzzle puzzle, RC maxPieces) async {
     Image image = puzzle.image;
-    print('BEFORE: ${maxPieces.toString()}');
+    DateTime start = DateTime.now();
+    Utils.printDateTime(
+        prefix: 'Before INSERTING ${maxPieces.row * maxPieces.col} pieces: ',
+        dateFormat: Utils.DEFAULT_TIIME_FORMAT,
+        date: start);
+
     if (image.width < image.height) {
       maxPieces.swap();
       print('image is portrait. Swapped maxPieces: ${maxPieces.toString()}');
     }
-
+    var pieces = <PuzzlePiece>[];
     int width = (image.width / maxPieces.col).floor();
     int height = (image.height / maxPieces.row).floor();
-    Uint8List imageBytes = await ImageService.getImageBytes(image);
-    for (int x = 0; x < maxPieces.row; x++) {
-      for (int y = 0; y < maxPieces.col; y++) {
+    int x = 0, y = 0;
+    imglib.Image imagelib =
+        imglib.decodeJpg(await ImageService.getImageBytes(image));
+    for (int i = 0; i < maxPieces.row; i++) {
+      pieces.clear();
+      for (int j = 0; j < maxPieces.col; j++) {
         Uint8List pieceBytes =
-            ImageService.copyCrop(imageBytes, x, y, width, height);
+            ImageService.copyCrop(imagelib, x, y, width, height);
         PuzzlePiece piece = PuzzlePiece(
             puzzleId: puzzle.id,
             imageBytes: pieceBytes,
@@ -107,10 +121,23 @@ class PuzzleBloc extends Cubit<Puzzle> {
             col: y,
             maxRow: maxPieces.row,
             maxCol: maxPieces.col);
-        await Repository.insertPuzzlePiece(piece);
-        _puzzlePiecesStream.sink.add([piece]);
+        pieces.add(piece);
+        x += width;
       }
+      await Repository.insertPuzzlePieces(pieces);
+      x = 0;
+      y += height;
     }
+    DateTime end = DateTime.now();
+    Utils.printDateTime(
+        prefix: 'After INSERTING ${pieces.length} pieces: ',
+        dateFormat: Utils.DEFAULT_TIIME_FORMAT,
+        date: end);
+    Duration d = end.difference(start);
+    Utils.printDateTime(
+        prefix:
+            'Total elapsed time: ${d.inMinutes.toStringAsFixed(2)}:${d.inSeconds.toStringAsFixed(2)}',
+        dateFormat: Utils.DEFAULT_TIIME_FORMAT);
   }
 
   Future<void> updatePuzzlePieceLocked(int puzzlePieceId, bool isLocked) async {

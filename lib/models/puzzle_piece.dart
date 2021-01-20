@@ -10,8 +10,8 @@ class PuzzlePiece {
   final Uint8List imageBytes;
   final double imageWidth;
   final double imageHeight;
-  bool locked;  // true: piece is in its correct location.
-  bool played;  // true: draw on palette; false: put in listview
+  bool locked; // true: piece is in its correct location.
+  bool played; // true: draw on palette; false: put in listview
   int row;
   int col;
   final int maxRow;
@@ -89,6 +89,11 @@ class PuzzlePiece {
         clipper: PuzzlePieceClipper(row, col, maxRow, maxCol),
       ),
     );
+  }
+
+  @override
+  String toString() {
+    return 'PuzzlePiece{id: $id, puzzleId: $puzzleId, imageWidth: $imageWidth, imageHeight: $imageHeight, locked: $locked, played: $played, row: $row, col: $col, maxRow: $maxRow, maxCol: $maxCol, _top: $_top, _left: $_left}';
   }
 }
 

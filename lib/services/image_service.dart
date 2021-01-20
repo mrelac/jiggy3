@@ -152,11 +152,8 @@ class ImageService {
         imglib.copyResize(imglib.decodeJpg(fullBytes), width: width));
   }
 
-  static Uint8List copyCrop(Uint8List imageBytes, int x, int y, int width, int height) {
-    return imglib.encodeJpg(
-        imglib.copyCrop(
-          imglib.decodeJpg(imageBytes), x, y, width, height
-        ));
+  static Uint8List copyCrop(imglib.Image image, int x, int y, int width, int height) {
+    return imglib.encodeJpg(imglib.copyCrop(image, x, y, width, height));
   }
 
 // USED FOR DEBUGGING

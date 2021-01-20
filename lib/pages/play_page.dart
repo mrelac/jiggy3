@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/palette_fab_menu.dart';
 
 class PlayPage extends StatefulWidget {
@@ -138,19 +139,35 @@ class _PlayPageState extends State<PlayPage> {
 
   @override
   Widget build(BuildContext context) {
-
-    // Listen to puzzlePieces and fill listview as they are available.
-
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
-    puzzleBloc.puzzlesStream.listen((puzzle) async {
-      await puzzle.loadImage();
-    });
 
-    return Scaffold(
-      backgroundColor: Colors.grey[900],
-      body: _buildBody(),
-      floatingActionButton: _paletteFabMenu,
-    );
+    return StreamBuilder<List<PuzzlePiece>>(
+        stream: puzzleBloc.puzzlePiecesStream,
+        builder: (context, snapshot) {
+          print('snapshot.connection state = ${snapshot.connectionState}');
+          if ((snapshot.hasData) && (snapshot.data.isNotEmpty)) {
+            print('Adding ${snapshot.data.length} pieces');
+            _lvPieces.addAll(_createPuzzlePieceForListview(snapshot.data));
+            if (!snapshot.hasData) return BusyIndicator();
+          }
+          return Scaffold(
+            backgroundColor: Colors.grey[900],
+            body: _buildBody(),
+            floatingActionButton: _paletteFabMenu,
+          );
+        });
+  }
+
+  Widget _buildBody() {
+    return imgIsLandscape && devIsLandscape
+        ? _landXland()
+        : imgIsLandscape && devIsPortrait
+            ? _landXport()
+            : imgIsPortrait && devIsLandscape
+                ? _portXland()
+                : imgIsPortrait && devIsPortrait
+                    ? _portXport()
+                    : null;
   }
 
   void onColourChanged(Color colour) {
@@ -174,18 +191,6 @@ class _PlayPageState extends State<PlayPage> {
   void onImageOpacityChangEnd(double value) {
     print('Done changing slider. value: $value');
     _updatePuzzle();
-  }
-
-  Widget _buildBody() {
-    return imgIsLandscape && devIsLandscape
-        ? _landXland()
-        : imgIsLandscape && devIsPortrait
-            ? _landXport()
-            : imgIsPortrait && devIsLandscape
-                ? _portXland()
-                : imgIsPortrait && devIsPortrait
-                    ? _portXport()
-                    : null;
   }
 
   // Build imgLandscape x devLandscape layout
@@ -238,15 +243,20 @@ class _PlayPageState extends State<PlayPage> {
     );
   }
 
+  List<Widget> _createPuzzlePieceForListview(List<PuzzlePiece> pieces) {
+    return pieces
+        .map((piece) => Container(
+              key: Key('${piece.id.toString()}'),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Image.memory(piece.imageBytes, fit: BoxFit.fill),
+              ),
+            ))
+        .toList();
+  }
+
   Widget _listView() {
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
-    Stream<List<PuzzlePiece>> piecesStream = puzzleBloc.puzzlePiecesStream;
-    piecesStream.listen((pieces) {
-      pieces.forEach((piece) => _lvPieces.add(Padding(
-            padding: const EdgeInsets.all(4.0),
-            child: Image.memory(piece.imageBytes, fit: BoxFit.fill),
-          )));
-    });
     return StreamBuilder<Object>(
         stream: puzzleBloc.puzzlePiecesStream,
         initialData: [],
@@ -257,10 +267,14 @@ class _PlayPageState extends State<PlayPage> {
               color: _colourValue,
               width: lW,
               height: lH,
-              child: ListView(
+              child: ListView.builder(
+                cacheExtent: 1500,
                 scrollDirection:
                     devIsLandscape ? Axis.vertical : Axis.horizontal,
-                children: _lvPieces,
+                itemCount: _lvPieces.length,
+                itemBuilder: (context, index) {
+                  return _lvPieces[index];
+                },
               ),
             ),
           );
@@ -270,13 +284,6 @@ class _PlayPageState extends State<PlayPage> {
   void _updatePuzzle() async {
     BlocProvider.of<PuzzleBloc>(context).updatePuzzle(widget.puzzle.id,
         imageColour: puzzle.imageColour, imageOpacity: puzzle.imageOpacity);
-  }
-
-  _closeNumPieces() {
-    if (_numPiecesOverlay != null) {
-      _numPiecesOverlay.remove();
-      _numPiecesOverlay = null;
-    }
   }
 
   @override

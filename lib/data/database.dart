@@ -160,9 +160,34 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   Future<List<PuzzlePiece>> getPuzzlePieces(int puzzleId) async {
     final db = await database;
     const String select = 'SELECT * FROM puzzle_piece WHERE puzzle_id = ?';
-    return ((await db.rawQuery(select))
+    return ((await db.rawQuery(select, [puzzleId]))
         .map<PuzzlePiece>((json) => PuzzlePiece.fromMap(json))
         .toList());
+  }
+
+  Future<void> insertPuzzlePieces(List<PuzzlePiece> pieces) async {
+    final db = _database.batch();
+    const String insert = '''
+INSERT INTO puzzle_piece
+  (puzzle_id, image_bytes, image_width, image_height, locked, played, row, col,
+   max_row, max_col)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+''';
+    print('Inserting ${pieces.length} pieces');
+    pieces.forEach((piece) async =>
+    db.rawQuery(insert, [
+      piece.puzzleId,
+      base64Encode(piece.imageBytes),
+      piece.imageWidth,
+      piece.imageHeight,
+      piece.locked,
+      piece.played,
+      piece.row,
+      piece.col,
+      piece.maxRow,
+      piece.maxCol
+    ]));
+    db.commit(noResult: true);
   }
 
   Future<PuzzlePiece> insertPuzzlePiece(PuzzlePiece piece) async {

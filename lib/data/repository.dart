@@ -126,6 +126,10 @@ class Repository {
     return await DBProvider.db.insertPuzzlePiece(piece);
   }
 
+  static Future<void> insertPuzzlePieces(List<PuzzlePiece> pieces) async {
+    return await DBProvider.db.insertPuzzlePieces(pieces);
+  }
+
   static Future<void> updatePuzzlePieceLocked(
       int puzzlePieceId, bool isLocked) async {
     return await DBProvider.db
