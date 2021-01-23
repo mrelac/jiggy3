@@ -125,6 +125,11 @@ class _PlayPageState extends State<PlayPage> {
   void initState() {
     super.initState();
 
+    PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
+    puzzleBloc.puzzlePiecesStream.listen((pieces) {
+      setState(() => _lvPieces.addAll(_createPuzzlePieceForListview(pieces)));
+    });
+
     puzzle = widget.puzzle;
     _imgSize = Size(widget.puzzle.image.width, widget.puzzle.image.height);
     _imgProvider = widget.puzzle.image.image;
@@ -145,10 +150,10 @@ class _PlayPageState extends State<PlayPage> {
         stream: puzzleBloc.puzzlePiecesStream,
         builder: (context, snapshot) {
           print('snapshot.connection state = ${snapshot.connectionState}');
-          if ((snapshot.hasData) && (snapshot.data.isNotEmpty)) {
-            print('Adding ${snapshot.data.length} pieces');
-            _lvPieces.addAll(_createPuzzlePieceForListview(snapshot.data));
-          }
+          // if ((snapshot.hasData) && (snapshot.data.isNotEmpty)) {
+          //   print('Adding ${snapshot.data.length} pieces');
+          //   _lvPieces.addAll(_createPuzzlePieceForListview(snapshot.data));
+          // }
           if (!snapshot.hasData) return BusyIndicator();
           return Scaffold(
             backgroundColor: Colors.grey[900],
@@ -159,15 +164,22 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Widget _buildBody() {
-    return imgIsLandscape && devIsLandscape
-        ? _landXland()
-        : imgIsLandscape && devIsPortrait
-            ? _landXport()
-            : imgIsPortrait && devIsLandscape
-                ? _portXland()
-                : imgIsPortrait && devIsPortrait
-                    ? _portXport()
-                    : null;
+    return Stack(children: [
+      imgIsLandscape && devIsLandscape
+          ? _landXland()
+          : imgIsLandscape && devIsPortrait
+              ? _landXport()
+              : imgIsPortrait && devIsLandscape
+                  ? _portXland()
+                  : imgIsPortrait && devIsPortrait
+                      ? _portXport()
+                      : null,
+
+      if (_positionedPiece != null)
+        _positionedPiece,
+
+
+    ]);
   }
 
   void onColourChanged(Color colour) {
@@ -225,21 +237,27 @@ class _PlayPageState extends State<PlayPage> {
     ]);
   }
 
+  Widget _positionedPiece;
+
   Widget _puzzleImage() {
     return DragTarget<PuzzlePiece>(
         onWillAccept: (value) => true,
         onAcceptWithDetails: (DragTargetDetails<PuzzlePiece> dtd) {
           PuzzlePiece piece = dtd.data;
-          return Positioned(
-            top: dtd.offset.dx,
-            left: dtd.offset.dy,
-            width: dtd.data.imageWidth,
-            height: dtd.data.imageHeight,
-            child:
-                CustomPaint(
-                  foregroundPainter: PuzzlePiecePainter(piece.row, piece.col, piece.maxRow, piece.maxCol),
+          setState(() {
+            print('left: ${dtd.offset.dx}, top: ${dtd.offset.dy}');
+            _positionedPiece = Positioned(
+              left: dtd.offset.dx,
+              top: dtd.offset.dy,
+              width: dtd.data.imageWidth,
+              height: dtd.data.imageHeight,
+              child: CustomPaint(
+                  foregroundPainter: PuzzlePiecePainter(
+                      piece.row, piece.col, piece.maxRow, piece.maxCol),
                   child: piece.image),
-                );
+            );
+          });
+          return _positionedPiece;
         },
         builder:
             (BuildContext context, List<PuzzlePiece> pieces, List<dynamic> l) =>
