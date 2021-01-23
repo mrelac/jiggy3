@@ -148,8 +148,8 @@ class _PlayPageState extends State<PlayPage> {
           if ((snapshot.hasData) && (snapshot.data.isNotEmpty)) {
             print('Adding ${snapshot.data.length} pieces');
             _lvPieces.addAll(_createPuzzlePieceForListview(snapshot.data));
-            if (!snapshot.hasData) return BusyIndicator();
           }
+          if (!snapshot.hasData) return BusyIndicator();
           return Scaffold(
             backgroundColor: Colors.grey[900],
             body: _buildBody(),
@@ -226,30 +226,56 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Widget _puzzleImage() {
+    return DragTarget<PuzzlePiece>(
+        onWillAccept: (value) => true,
+        onAcceptWithDetails: (DragTargetDetails<PuzzlePiece> dtd) {
+          PuzzlePiece piece = dtd.data;
+          return Positioned(
+            top: dtd.offset.dx,
+            left: dtd.offset.dy,
+            width: dtd.data.imageWidth,
+            height: dtd.data.imageHeight,
+            child:
+                CustomPaint(
+                  foregroundPainter: PuzzlePiecePainter(piece.row, piece.col, piece.maxRow, piece.maxCol),
+                  child: piece.image),
+                );
+        },
+        builder:
+            (BuildContext context, List<PuzzlePiece> pieces, List<dynamic> l) =>
+                imagePieceBuilder());
+  }
+
+  Widget imagePieceBuilder() {
     return Container(
-      width: iW,
-      height: iH,
-      padding: iP,
-      child: Image(
-        color: Color.fromRGBO(
-            widget.puzzle.imageColour.red,
-            widget.puzzle.imageColour.green,
-            widget.puzzle.imageColour.blue,
-            _opacityFactor.value),
-        colorBlendMode: BlendMode.modulate,
-        fit: BoxFit.cover,
-        image: _imgProvider,
-      ),
-    );
+        width: iW,
+        height: iH,
+        padding: iP,
+        child: Image(
+          color: Color.fromRGBO(
+              widget.puzzle.imageColour.red,
+              widget.puzzle.imageColour.green,
+              widget.puzzle.imageColour.blue,
+              _opacityFactor.value),
+          colorBlendMode: BlendMode.modulate,
+          fit: BoxFit.cover,
+          image: _imgProvider,
+        ));
   }
 
   List<Widget> _createPuzzlePieceForListview(List<PuzzlePiece> pieces) {
     return pieces
-        .map((piece) => Container(
-              key: Key('${piece.id.toString()}'),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Image.memory(piece.imageBytes, fit: BoxFit.fill),
+        .map((piece) => Draggable<PuzzlePiece>(
+              data: piece,
+              affinity: Axis.horizontal,
+              feedback: Image.memory(piece.imageBytes, fit: BoxFit.fill),
+              onDragCompleted: () {},
+              child: Container(
+                key: Key('${piece.id.toString()}'),
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Image.memory(piece.imageBytes, fit: BoxFit.fill),
+                ),
               ),
             ))
         .toList();
