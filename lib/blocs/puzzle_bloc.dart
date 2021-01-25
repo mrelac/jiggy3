@@ -3,14 +3,13 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image/image.dart' as imglib;
 import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
 import 'package:jiggy3/models/rc.dart';
 import 'package:jiggy3/services/image_service.dart';
 import 'package:jiggy3/services/utils.dart';
-
-import 'package:image/image.dart' as imglib;
 
 // FIXME FIXME FIXME This class needs work
 
@@ -84,7 +83,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
   Future<void> addPuzzlePiece(PuzzlePiece piece) async {
     piece = await Repository.insertPuzzlePiece(piece);
     _pieces.add(piece);
-    loadPuzzlePieces();
+    await loadPuzzlePieces();
   }
 
   /// The image must have a width and height. maxPieces will be swapped if
@@ -117,8 +116,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
             imageBytes: pieceBytes,
             imageWidth: width.toDouble(),
             imageHeight: height.toDouble(),
-            row: x,
-            col: y,
+            homeRow: i,
+            homeCol: j,
             maxRow: maxPieces.row,
             maxCol: maxPieces.col);
         pieces.add(piece);
@@ -148,20 +147,12 @@ class PuzzleBloc extends Cubit<Puzzle> {
     _puzzlePiecesStream.add(_pieces);
   }
 
-  Future<void> updatePuzzlePiecePlayed(int puzzlePieceId, bool isPlayed) async {
-    await Repository.updatePuzzlePiecePlayed(puzzlePieceId, isPlayed);
-    _pieces
-        .where((p) => p.id == puzzlePieceId)
-        .map((p2) => p2.played = isPlayed);
-    _puzzlePiecesStream.add(_pieces);
-  }
-
   Future<void> updatePuzzlePiecePosition(
-      int puzzlePieceId, int row, int col) async {
-    await Repository.updatePuzzlePiecePosition(puzzlePieceId, row, col);
+      int puzzlePieceId, int lastRow, int lastCol) async {
+    await Repository.updatePuzzlePiecePosition(puzzlePieceId, lastRow, lastCol);
     _pieces.where((p) => p.id == puzzlePieceId).map((p2) {
-      p2.row = row;
-      p2.col = col;
+      p2.lastRow = lastRow;
+      p2.lastCol = lastCol;
     });
     _puzzlePiecesStream.add(_pieces);
   }

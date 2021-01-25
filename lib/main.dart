@@ -14,7 +14,6 @@ class Jiggy3 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = 'Jiggy!';
-    final bool applicationResetRequested = ARG_RESET.toLowerCase() == 'true';
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,

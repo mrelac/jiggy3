@@ -129,9 +129,17 @@ SELECT a.* FROM album a
   /// Returns all puzzles, or an empty list if there are no puzzles
   Future<List<Puzzle>> getPuzzles() async {
     final db = await database;
-    return ((await db.rawQuery('SELECT * FROM puzzle'))
-        .map<Puzzle>((json) => Puzzle.fromMap(json))
-        .toList());
+    // This throws an exception when a request to rebuild the database is
+    // specified. It comes about as a result of ChooserBloc seeding the list of
+    // albums and is not fatal if the query doesn't complete. So it is wrapped
+    // in a try/catch and exceptions are ignored.
+    var puzzles = <Puzzle>[];
+    try {
+      puzzles = (await db.rawQuery('SELECT * FROM puzzle'))
+          .map<Puzzle>((json) => Puzzle.fromMap(json))
+          .toList();
+    } catch (e) {}
+    return puzzles;
   }
 
   Future<Puzzle> insertPuzzle(Puzzle puzzle) async {
@@ -169,34 +177,33 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     final db = _database.batch();
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, played, row, col,
-   max_row, max_col)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (puzzle_id, image_bytes, image_width, image_height, locked, home_row, home_col,
+   last_row, last_col, max_row, max_col)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
-    print('Inserting ${pieces.length} pieces');
-    pieces.forEach((piece) async =>
-    db.rawQuery(insert, [
-      piece.puzzleId,
-      base64Encode(piece.imageBytes),
-      piece.imageWidth,
-      piece.imageHeight,
-      piece.locked,
-      piece.played,
-      piece.row,
-      piece.col,
-      piece.maxRow,
-      piece.maxCol
-    ]));
-    db.commit(noResult: true);
+    pieces.forEach((piece) async => db.rawInsert(insert, [
+          piece.puzzleId,
+          base64Encode(piece.imageBytes),
+          piece.imageWidth,
+          piece.imageHeight,
+          piece.locked,
+          piece.homeRow,
+          piece.homeCol,
+          piece.lastRow,
+          piece.lastCol,
+          piece.maxRow,
+          piece.maxCol,
+        ]));
+    await db.commit(noResult: true);
   }
 
   Future<PuzzlePiece> insertPuzzlePiece(PuzzlePiece piece) async {
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, played, row, col,
-   max_row, max_col)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (puzzle_id, image_bytes, image_width, image_height, locked, home_row, home_col,
+   last_row, last_col, max_row, max_col)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     piece.id = await db.rawInsert(insert, [
       piece.puzzleId,
@@ -204,17 +211,22 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       piece.imageWidth,
       piece.imageHeight,
       piece.locked,
-      piece.played,
-      piece.row,
-      piece.col,
+      piece.homeRow,
+      piece.homeCol,
+      piece.lastRow,
+      piece.lastCol,
       piece.maxRow,
       piece.maxCol
     ]);
     return piece;
   }
 
-  Future<void> updatePuzzlePiece(int puzzlePieceId, {
-    bool locked: false, bool played: false, int row, int col}) async {
+  Future<void> updatePuzzlePiece(int puzzlePieceId,
+      {bool locked: false,
+      int homeRow,
+      int homeCol,
+      int lastRow,
+      int lastCol}) async {
     final db = await database;
 
     final fields = <String>[];
@@ -224,17 +236,21 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       fields.add('locked = ?');
       parms.add(locked ? 1 : 0);
     }
-    if (played != null) {
-      fields.add('played = ?');
-      parms.add(played ? 1 : 0);
+    if (homeRow != null) {
+      fields.add('home_row = ?');
+      parms.add(homeRow);
     }
-    if (row != null) {
-      fields.add('row = ?');
-      parms.add(row);
+    if (homeCol != null) {
+      fields.add('home_col = ?');
+      parms.add(homeCol);
     }
-    if (col != null) {
-      fields.add('col = ?');
-      parms.add(col);
+    if (lastRow != null) {
+      fields.add('last_row = ?');
+      parms.add(lastRow);
+    }
+    if (lastCol != null) {
+      fields.add('last_col = ?');
+      parms.add(lastCol);
     }
     parms.add(puzzlePieceId);
 
@@ -414,9 +430,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_width REAL NOT NULL,
     image_height REAL NOT NULL,
     locked INTEGER NOT NULL,
-    played INTEGER NOT NULL,
-    row INTEGER NOT NULL,
-    col INTEGER NOT NULL,
+    home_row INTEGER NOT NULL,
+    home_col INTEGER NOT NULL,
+    last_row INTEGER DEFAULT NULL,
+    last_col INTEGER DEFAULT NULL,
     max_row INTEGER NOT NULL,
     max_col INTEGER NOT NULL,
     FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)

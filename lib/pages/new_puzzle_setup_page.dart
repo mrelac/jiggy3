@@ -167,7 +167,8 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
 
   BoxDecoration _puzzleSizeDecoration(int maxPuzzlePieces) {
     BoxDecoration bd;
-    if (maxPuzzlePieces == (_maxPieces ?? 0)) {
+    int selectedSize = _maxPieces == null ? 0 : _maxPieces.row * _maxPieces.col;
+    if (maxPuzzlePieces == selectedSize) {
       bd = BoxDecoration(
           border: Border.all(color: Colors.yellow, width: 4.0),
           color: Colors.blueAccent);

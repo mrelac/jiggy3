@@ -1,10 +1,12 @@
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
-import 'package:jiggy3/widgets/busy_indicator.dart';
 import 'package:jiggy3/widgets/palette_fab_menu.dart';
+import 'package:jiggy3/widgets/piece.dart';
 
 class PlayPage extends StatefulWidget {
   final Puzzle puzzle;
@@ -109,8 +111,7 @@ class _PlayPageState extends State<PlayPage> {
   Puzzle puzzle;
   ImageProvider _imgProvider;
   final _lvPieces = <Widget>[]; // These are the dressed pieces in the listview
-
-  OverlayEntry _numPiecesOverlay;
+  final _playedPieces = <Widget>[]; // These are the played palette pieces
   ValueNotifier<double> _opacityFactor;
 
   void changeColor(Color color) {
@@ -127,8 +128,21 @@ class _PlayPageState extends State<PlayPage> {
 
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
     puzzleBloc.puzzlePiecesStream.listen((pieces) {
-      setState(() => _lvPieces.addAll(_createPuzzlePieceForListview(pieces)));
+      final lvPieces = <Widget>[];
+      final playedPieces = <Widget>[];
+      pieces.forEach((puzzlePiece) {
+        if (puzzlePiece.lastRow != null) {
+          playedPieces.add(Piece(puzzlePiece));
+        } else {
+          lvPieces.add(Piece(puzzlePiece));
+        }
+      });
+      setState(() {
+        _lvPieces.addAll(lvPieces);
+        _playedPieces.addAll(playedPieces);
+      });
     });
+    puzzleBloc.loadPuzzlePieces();
 
     puzzle = widget.puzzle;
     _imgSize = Size(widget.puzzle.image.width, widget.puzzle.image.height);
@@ -145,16 +159,16 @@ class _PlayPageState extends State<PlayPage> {
   @override
   Widget build(BuildContext context) {
     PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
-
+// fixme fixme fixme This file needs work.
     return StreamBuilder<List<PuzzlePiece>>(
         stream: puzzleBloc.puzzlePiecesStream,
         builder: (context, snapshot) {
           print('snapshot.connection state = ${snapshot.connectionState}');
-          // if ((snapshot.hasData) && (snapshot.data.isNotEmpty)) {
-          //   print('Adding ${snapshot.data.length} pieces');
-          //   _lvPieces.addAll(_createPuzzlePieceForListview(snapshot.data));
-          // }
-          if (!snapshot.hasData) return BusyIndicator();
+          if ((snapshot.hasData) && (snapshot.data.isNotEmpty)) {
+            print('Adding ${snapshot.data.length} pieces');
+            // _lvPieces.addAll(_createPuzzlePieceForListview(snapshot.data));
+          }
+          // if (!snapshot.hasData) return BusyIndicator();
           return Scaffold(
             backgroundColor: Colors.grey[900],
             body: _buildBody(),
@@ -164,22 +178,18 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Widget _buildBody() {
-    return Stack(children: [
-      imgIsLandscape && devIsLandscape
-          ? _landXland()
-          : imgIsLandscape && devIsPortrait
-              ? _landXport()
-              : imgIsPortrait && devIsLandscape
-                  ? _portXland()
-                  : imgIsPortrait && devIsPortrait
-                      ? _portXport()
-                      : null,
-
-      if (_positionedPiece != null)
-        _positionedPiece,
-
-
-    ]);
+    return Stack(
+        children: <Widget>[]
+          ..add(imgIsLandscape && devIsLandscape
+              ? _landXland()
+              : imgIsLandscape && devIsPortrait
+                  ? _landXport()
+                  : imgIsPortrait && devIsLandscape
+                      ? _portXland()
+                      : imgIsPortrait && devIsPortrait
+                          ? _portXport()
+                          : null)
+          ..addAll(_playedPieces ?? <Widget>[]));
   }
 
   void onColourChanged(Color colour) {
@@ -237,92 +247,70 @@ class _PlayPageState extends State<PlayPage> {
     ]);
   }
 
-  Widget _positionedPiece;
-
   Widget _puzzleImage() {
-    return DragTarget<PuzzlePiece>(
+    return DragTarget<Piece>(
         onWillAccept: (value) => true,
-        onAcceptWithDetails: (DragTargetDetails<PuzzlePiece> dtd) {
-          PuzzlePiece piece = dtd.data;
-          setState(() {
-            print('left: ${dtd.offset.dx}, top: ${dtd.offset.dy}');
-            _positionedPiece = Positioned(
-              left: dtd.offset.dx,
-              top: dtd.offset.dy,
-              width: dtd.data.imageWidth,
-              height: dtd.data.imageHeight,
-              child: CustomPaint(
-                  foregroundPainter: PuzzlePiecePainter(
-                      piece.row, piece.col, piece.maxRow, piece.maxCol),
-                  child: piece.image),
-            );
-          });
-          return _positionedPiece;
+        onAcceptWithDetails: (DragTargetDetails<Piece> dtd) {
+          print('onAccept: dtd = $dtd');
+          Piece piece = dtd.data;
+
+          // setState(() {
+          //   print('left: ${dtd.offset.dx}, top: ${dtd.offset.dy}');
+          //   _positionedPiece = Positioned(
+          //     left: dtd.offset.dx,
+          //     top: dtd.offset.dy,
+          //     width: dtd.data.imageWidth,
+          //     height: dtd.data.imageHeight,
+          //     child: CustomPaint(
+          //         foregroundPainter: PuzzlePiecePainter(
+          //             piece.homeRow, piece.homeCol, piece.maxRow, piece.maxCol),
+          //         child: piece.image),
+          //   );
+          // });
+          // return _positionedPiece;
         },
-        builder:
-            (BuildContext context, List<PuzzlePiece> pieces, List<dynamic> l) =>
-                imagePieceBuilder());
+        builder: (BuildContext context, List<Piece> pieces, List<dynamic> l) {
+          return _imageBuilder();
+        });
   }
 
-  Widget imagePieceBuilder() {
-    return Container(
-        width: iW,
-        height: iH,
-        padding: iP,
-        child: Image(
-          color: Color.fromRGBO(
-              widget.puzzle.imageColour.red,
-              widget.puzzle.imageColour.green,
-              widget.puzzle.imageColour.blue,
-              _opacityFactor.value),
-          colorBlendMode: BlendMode.modulate,
-          fit: BoxFit.cover,
-          image: _imgProvider,
-        ));
-  }
-
-  List<Widget> _createPuzzlePieceForListview(List<PuzzlePiece> pieces) {
-    return pieces
-        .map((piece) => Draggable<PuzzlePiece>(
-              data: piece,
-              affinity: Axis.horizontal,
-              feedback: Image.memory(piece.imageBytes, fit: BoxFit.fill),
-              onDragCompleted: () {},
-              child: Container(
-                key: Key('${piece.id.toString()}'),
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Image.memory(piece.imageBytes, fit: BoxFit.fill),
-                ),
-              ),
-            ))
-        .toList();
-  }
+  Widget _imageBuilder() => Container(
+      width: iW,
+      height: iH,
+      padding: iP,
+      child: Image(
+        color: Color.fromRGBO(
+            widget.puzzle.imageColour.red,
+            widget.puzzle.imageColour.green,
+            widget.puzzle.imageColour.blue,
+            _opacityFactor.value),
+        colorBlendMode: BlendMode.modulate,
+        fit: BoxFit.cover,
+        image: _imgProvider,
+      ));
 
   Widget _listView() {
-    PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
-    return StreamBuilder<Object>(
-        stream: puzzleBloc.puzzlePiecesStream,
-        initialData: [],
-        builder: (context, snapshot) {
-          return Padding(
-            padding: EdgeInsets.zero,
-            child: Container(
-              color: _colourValue,
-              width: lW,
-              height: lH,
-              child: ListView.builder(
-                cacheExtent: 1500,
-                scrollDirection:
-                    devIsLandscape ? Axis.vertical : Axis.horizontal,
-                itemCount: _lvPieces.length,
-                itemBuilder: (context, index) {
-                  return _lvPieces[index];
-                },
-              ),
-            ),
-          );
-        });
+    return Padding(
+      padding: EdgeInsets.zero,
+      child: Container(
+        color: _colourValue, // Background colour between pieces
+        width: lW,
+        height: lH,
+        child: ListView.builder(
+          cacheExtent: 1500,
+          scrollDirection: devIsLandscape ? Axis.vertical : Axis.horizontal,
+          itemCount: _lvPieces.length,
+          itemBuilder: (context, index) {
+            return Draggable<Piece>(
+                data: _lvPieces[index],
+                affinity: Axis.horizontal,
+                feedback: _lvPieces[index],
+                onDragCompleted: () {},
+                child: _lvPieces[index]);
+          },
+        ),
+      ),
+    );
   }
 
   void _updatePuzzle() async {

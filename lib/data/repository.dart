@@ -136,16 +136,10 @@ class Repository {
         .updatePuzzlePiece(puzzlePieceId, locked: isLocked);
   }
 
-  static Future<void> updatePuzzlePiecePlayed(
-      int puzzlePieceId, bool isPlayed) async {
-    return await DBProvider.db
-        .updatePuzzlePiece(puzzlePieceId, played: isPlayed);
-  }
-
   static Future<void> updatePuzzlePiecePosition(
-      int puzzlePieceId, int row, int col) async {
+      int puzzlePieceId, int lastRow, int lastCol) async {
     return await DBProvider.db
-        .updatePuzzlePiece(puzzlePieceId, row: row, col: col);
+        .updatePuzzlePiece(puzzlePieceId, lastRow: lastRow, lastCol: lastCol);
   }
 
   static Future<void> deletePuzzleImage(String location) async {
