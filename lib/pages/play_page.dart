@@ -1,5 +1,3 @@
-
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
@@ -108,17 +106,19 @@ class _PlayPageState extends State<PlayPage> {
                       : null;
 
   Color _colourValue;
+  Piece _droppedPiece;
   Puzzle puzzle;
   ImageProvider _imgProvider;
-  final _lvPieces = <Widget>[]; // These are the dressed pieces in the listview
-  final _playedPieces = <Widget>[]; // These are the played palette pieces
+  final _lvPieces = <Piece>[];
+  final _playedPieces = <Piece>[];
+
   ValueNotifier<double> _opacityFactor;
 
   void changeColor(Color color) {
     setState(() {
       _colourValue = color;
       widget.puzzle.imageColour = color;
-      _updatePuzzle();
+      _updatePuzzleControls();
     });
   }
 
@@ -126,23 +126,10 @@ class _PlayPageState extends State<PlayPage> {
   void initState() {
     super.initState();
 
-    PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
-    puzzleBloc.puzzlePiecesStream.listen((pieces) {
-      final lvPieces = <Widget>[];
-      final playedPieces = <Widget>[];
-      pieces.forEach((puzzlePiece) {
-        if (puzzlePiece.lastRow != null) {
-          playedPieces.add(Piece(puzzlePiece));
-        } else {
-          lvPieces.add(Piece(puzzlePiece));
-        }
-      });
-      setState(() {
-        _lvPieces.addAll(lvPieces);
-        _playedPieces.addAll(playedPieces);
-      });
-    });
-    puzzleBloc.loadPuzzlePieces();
+    BlocProvider.of<PuzzleBloc>(context).loadPuzzlePieces();
+    BlocProvider.of<PuzzleBloc>(context)
+        .puzzlePiecesStream
+        .listen((pieces) => _loadPieces(pieces));
 
     puzzle = widget.puzzle;
     _imgSize = Size(widget.puzzle.image.width, widget.puzzle.image.height);
@@ -156,30 +143,39 @@ class _PlayPageState extends State<PlayPage> {
         onImageOpacityChangeEnd: onImageOpacityChangEnd);
   }
 
+  void _loadPieces(List<PuzzlePiece> pieces) {
+    final lvPieces = <Piece>[];
+    final playedPieces = <Piece>[];
+    pieces.forEach((puzzlePiece) {
+      if (puzzlePiece.lastTop != null) {
+        playedPieces.add(Piece(puzzlePiece, devSize));
+      } else {
+        lvPieces.add(Piece(puzzlePiece, devSize));
+      }
+    });
+    setState(() {
+      _lvPieces.addAll(lvPieces);
+      _playedPieces.addAll(playedPieces);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    PuzzleBloc puzzleBloc = BlocProvider.of<PuzzleBloc>(context);
-// fixme fixme fixme This file needs work.
-    return StreamBuilder<List<PuzzlePiece>>(
-        stream: puzzleBloc.puzzlePiecesStream,
-        builder: (context, snapshot) {
-          print('snapshot.connection state = ${snapshot.connectionState}');
-          if ((snapshot.hasData) && (snapshot.data.isNotEmpty)) {
-            print('Adding ${snapshot.data.length} pieces');
-            // _lvPieces.addAll(_createPuzzlePieceForListview(snapshot.data));
-          }
-          // if (!snapshot.hasData) return BusyIndicator();
-          return Scaffold(
-            backgroundColor: Colors.grey[900],
-            body: _buildBody(),
-            floatingActionButton: _paletteFabMenu,
-          );
-        });
+    return Scaffold(
+      backgroundColor: Colors.grey[900],
+      body: _buildBody(),
+      floatingActionButton: _paletteFabMenu,
+    );
   }
 
   Widget _buildBody() {
+    final w = <Widget>[];
+    if (_droppedPiece != null) {
+      w.add(_droppedPiece);
+      _droppedPiece = null;
+    }
     return Stack(
-        children: <Widget>[]
+        children: w
           ..add(imgIsLandscape && devIsLandscape
               ? _landXland()
               : imgIsLandscape && devIsPortrait
@@ -189,7 +185,34 @@ class _PlayPageState extends State<PlayPage> {
                       : imgIsPortrait && devIsPortrait
                           ? _portXport()
                           : null)
-          ..addAll(_playedPieces ?? <Widget>[]));
+          ..addAll(_draggablePlayedPieces()));
+  }
+
+  List<Widget> _draggablePlayedPieces() {
+    final w = <Widget>[];
+    _playedPieces
+        .forEach((piece) => w.add(piece.playedDraggable(onPieceDropped)));
+    return w;
+  }
+
+  void onPieceDropped(Piece piece, Offset topLeft) {
+    print('PlayPage.onPieceDrop(): piece: $piece, topLeft: $topLeft');
+    // Delete by id from _lvPieces and _playedPieces.
+    // Round up piece to even multiple of size
+    // If dropped on palette
+    //   - if home == last then lock piece down
+    //   - If this was the last (locked) piece, the game is over, so end the game.
+    //   - Make sure lastDx and lastDy are updated
+    //   - Either:
+    //   -   call stream to update this puzzlePiece and redraw
+    //   - OR call setState() to redraw the piece on the palette.
+    // Else
+    //   - null out lastDx/lastDy
+    //   - Insert piece into listview at current location
+    //   - Update piece lastDx and lastDy
+    //   - Either:
+    //   -   call stream to update the listview
+    //   - OR: Insert piece into listview at current location
   }
 
   void onColourChanged(Color colour) {
@@ -200,11 +223,13 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   void onColourChangeEnd(Color colour) {
-    _updatePuzzle();
+    _updatePuzzleControls();
   }
 
   void onImageOpacityChanged(double value) {
     setState(() {
+      _colourValue = Color.fromRGBO(
+          _colourValue.red, _colourValue.green, _colourValue.blue, value);
       _opacityFactor.value = value;
       widget.puzzle.imageOpacity = value;
     });
@@ -212,7 +237,7 @@ class _PlayPageState extends State<PlayPage> {
 
   void onImageOpacityChangEnd(double value) {
     print('Done changing slider. value: $value');
-    _updatePuzzle();
+    _updatePuzzleControls();
   }
 
   // Build imgLandscape x devLandscape layout
@@ -247,73 +272,47 @@ class _PlayPageState extends State<PlayPage> {
     ]);
   }
 
-  Widget _puzzleImage() {
-    return DragTarget<Piece>(
-        onWillAccept: (value) => true,
-        onAcceptWithDetails: (DragTargetDetails<Piece> dtd) {
-          print('onAccept: dtd = $dtd');
-          Piece piece = dtd.data;
-
-          // setState(() {
-          //   print('left: ${dtd.offset.dx}, top: ${dtd.offset.dy}');
-          //   _positionedPiece = Positioned(
-          //     left: dtd.offset.dx,
-          //     top: dtd.offset.dy,
-          //     width: dtd.data.imageWidth,
-          //     height: dtd.data.imageHeight,
-          //     child: CustomPaint(
-          //         foregroundPainter: PuzzlePiecePainter(
-          //             piece.homeRow, piece.homeCol, piece.maxRow, piece.maxCol),
-          //         child: piece.image),
-          //   );
-          // });
-          // return _positionedPiece;
-        },
-        builder: (BuildContext context, List<Piece> pieces, List<dynamic> l) {
-          return _imageBuilder();
-        });
+  _fullImageContainer() {
+    return Container(
+        width: iW,
+        height: iH,
+        padding: iP,
+        child: Image(
+          color: Color.fromRGBO(
+              widget.puzzle.imageColour.red,
+              widget.puzzle.imageColour.green,
+              widget.puzzle.imageColour.blue,
+              _opacityFactor.value),
+          colorBlendMode: BlendMode.modulate,
+          fit: BoxFit.cover,
+          image: _imgProvider,
+        ));
   }
 
-  Widget _imageBuilder() => Container(
-      width: iW,
-      height: iH,
-      padding: iP,
-      child: Image(
-        color: Color.fromRGBO(
-            widget.puzzle.imageColour.red,
-            widget.puzzle.imageColour.green,
-            widget.puzzle.imageColour.blue,
-            _opacityFactor.value),
-        colorBlendMode: BlendMode.modulate,
-        fit: BoxFit.cover,
-        image: _imgProvider,
-      ));
+  Widget _puzzleImage() {
+    return DragTarget<Piece>(
+      builder: (context, ok, rejected) => _fullImageContainer(),
+      onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
+        onPieceDropped(dtd.data, dtd.offset);
+      }),
+      onWillAccept: (_) => true,
+    );
+  }
 
   Widget _listView() {
-    return Padding(
-      padding: EdgeInsets.zero,
-      child: Container(
+    return Container(
         color: _colourValue, // Background colour between pieces
         width: lW,
         height: lH,
         child: ListView.builder(
-          cacheExtent: 1500,
-          scrollDirection: devIsLandscape ? Axis.vertical : Axis.horizontal,
-          itemCount: _lvPieces.length,
-          itemBuilder: (context, index) {
-            return Draggable<Piece>(
-                data: _lvPieces[index],
-                affinity: Axis.horizontal,
-                feedback: _lvPieces[index],
-                onDragCompleted: () {},
-                child: _lvPieces[index]);
-          },
-        ),
-      ),
-    );
+            cacheExtent: 1500,
+            scrollDirection: devIsLandscape ? Axis.vertical : Axis.horizontal,
+            itemCount: _lvPieces.length,
+            itemBuilder: (context, index) =>
+                _lvPieces[index].lvDraggable(devSize, onPieceDropped)));
   }
 
-  void _updatePuzzle() async {
+  void _updatePuzzleControls() {
     BlocProvider.of<PuzzleBloc>(context).updatePuzzle(widget.puzzle.id,
         imageColour: puzzle.imageColour, imageOpacity: puzzle.imageOpacity);
   }

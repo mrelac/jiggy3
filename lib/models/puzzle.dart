@@ -14,8 +14,8 @@ class Puzzle {
   String name;
   Uint8List thumb;
   String imageLocation;
-  Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, IMAGE_OPACITY_CLEAR);
-  double imageOpacity = IMAGE_OPACITY_CLEAR;
+  Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, IMAGE_OPACITY_DIM);
+  double imageOpacity = IMAGE_OPACITY_DIM;
   Image _image;
 
   // # of pieces locked to win game. -1 means 'Game not yet started'.
@@ -35,6 +35,7 @@ class Puzzle {
 }
 
   static const double IMAGE_OPACITY_CLEAR = 1.0;
+  static const double IMAGE_OPACITY_DIM = .35;
 
   Puzzle(
       {this.id,
@@ -67,7 +68,7 @@ class Puzzle {
           json['image_colour_r'],
           json['image_colour_g'],
           json['image_colour_b'],
-          json['image_opacity'] ?? IMAGE_OPACITY_CLEAR);
+          json['image_opacity'] ?? IMAGE_OPACITY_DIM);
     }
   }
 

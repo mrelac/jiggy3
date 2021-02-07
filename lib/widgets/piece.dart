@@ -1,80 +1,109 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
 
+/// This class is a widget that represents a single PuzzlePiece with path
+/// (edge) cutouts, without Padding or Positioned/Stack properties. The idea
+/// is to wrap this Piece in the appropriate widget for display on the palette
+/// or in the listview.
+
+typedef void OnPieceDropped(Piece piece, Offset topLeft);
+
 class Piece extends StatefulWidget {
   final PuzzlePiece puzzlePiece;
+  final Size devSize;
 
-  Piece(this.puzzlePiece);
+  Piece(this.puzzlePiece, this.devSize);
+
+  bool get devIsLandscape => devSize.width > devSize.height;
+
+  Widget lvDraggable(Size devSize, OnPieceDropped onPieceDropped) {
+    final Widget clipPath = _clipPath();
+    return Draggable<Piece>(
+      child: _lvDragTarget(onPieceDropped),
+      feedback: clipPath,
+      childWhenDragging: Container(),
+      data: this,
+      affinity: devIsLandscape ? Axis.horizontal : Axis.vertical,
+      onDraggableCanceled: (velocity, offset) {
+        print('Drag was canceled. offset = $offset');
+      },
+    );
+  }
+
+  Widget _lvDragTarget(OnPieceDropped onPieceDropped) {
+    return DragTarget<Piece>(
+      builder: (context, ok, rejected) => _clipPath(),
+      onWillAccept: (_) => true,
+      onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
+        onPieceDropped(this, dtd.offset);
+      }),
+    );
+  }
+
+  Widget _clipPath() {
+    return ClipPath(
+      child: Container(
+        key: Key('${puzzlePiece.id.toString()}'),
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: Image.memory(puzzlePiece.imageBytes, fit: BoxFit.fill),
+        ),
+      ),
+      // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
+    );
+  }
+
+  Widget playedDraggable(OnPieceDropped onPieceDropped) {
+    final Widget playedPositioned = _playedPositioned();
+    return Draggable<Piece>(
+        child: _playedDragTarget(onPieceDropped),
+        feedback: playedPositioned,
+        childWhenDragging: Container(),
+        data: this);
+  }
+
+  Widget _playedDragTarget(OnPieceDropped onPieceDropped) {
+    return DragTarget<Piece>(
+      builder: (context, ok, rejected) => _playedPositioned(),
+      onAcceptWithDetails: ((DragTargetDetails dtd) {
+        onPieceDropped(this, dtd.offset);
+      }),
+      onWillAccept: (_) => true,
+    );
+  }
+
+  Widget _playedPositioned() {
+    return Positioned(
+      left: puzzlePiece.lastTop,
+      top: puzzlePiece.lastLeft,
+      width: puzzlePiece.imageWidth,
+      height: puzzlePiece.imageHeight,
+      child: ClipPath(
+        child: CustomPaint(
+            foregroundPainter: PiecePainter(
+                puzzlePiece.lastTop.toInt(),
+                puzzlePiece.lastLeft.toInt(),
+                devSize.height.toInt(),
+                devSize.width.toInt()),
+            child: puzzlePiece.image),
+        // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
+      ),
+    );
+  }
 
   @override
   _PieceState createState() => _PieceState();
+
+  @override
+  String toStringShort() {
+    return 'Piece{puzzlePiece: {$puzzlePiece}, devSize: {$devSize]}}';
+  }
 }
 
-/// If the piece has never been played, its lastRow and lastCol will be null
-/// and we should return a widget suitable for insertion into the listview;
-/// otherwise, the piece has been played and we return a Positioned widget
-/// suitable for drawing the widget on the palette in its last known row and
-/// column.
 class _PieceState extends State<Piece> {
   @override
   Widget build(BuildContext context) {
-    return widget.puzzlePiece.lastRow != null
-        ? buildPositionedTarget()
-        : buildListviewTarget();
-  }
-
-  // Return a widget suitable for Positioned placement on the palette.
-  Widget buildPositionedTarget() {
-    double _top;
-    double _left;
-    int lastRow = widget.puzzlePiece.lastRow;
-    int lastCol = widget.puzzlePiece.lastCol;
-    int homeRow = widget.puzzlePiece.homeRow;
-    int homeCol = widget.puzzlePiece.homeCol;
-    int maxRow = widget.puzzlePiece.maxRow;
-    int maxCol = widget.puzzlePiece.maxCol;
-    Image image = widget.puzzlePiece.image;
-
-    final imageWidth = MediaQuery.of(context).size.width;
-    final imageHeight = MediaQuery.of(context).size.height *
-        MediaQuery.of(context).size.width /
-        imageWidth;
-    final pieceWidth = imageWidth / maxCol;
-    final pieceHeight = imageHeight / maxRow;
-
-    if (_top == null) {
-      _top = Random().nextInt((imageHeight - pieceHeight).ceil()).toDouble();
-      _top -= lastRow * pieceHeight;
-    }
-    if (_left == null) {
-      _left = Random().nextInt((imageWidth - pieceWidth).ceil()).toDouble();
-      _left -= lastCol * pieceWidth;
-    }
-
-    return Positioned(
-      top: _top,
-      left: _left,
-      width: imageWidth,
-      child: ClipPath(
-        child: CustomPaint(
-            foregroundPainter: PiecePainter(lastRow, lastCol, maxRow, maxCol),
-            child: image),
-        clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
-      ),
-    );
-  }
-
-  // Return a widget suitable for insertion into the listview.
-  Widget buildListviewTarget() {
-    return Container(
-      key: Key('${widget.puzzlePiece.id.toString()}'),
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Image.memory(widget.puzzlePiece.imageBytes, fit: BoxFit.fill),
-      ),
-    );
+    return widget._clipPath();
   }
 }
 

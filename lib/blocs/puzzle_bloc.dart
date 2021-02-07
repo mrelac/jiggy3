@@ -14,9 +14,7 @@ import 'package:jiggy3/services/utils.dart';
 // FIXME FIXME FIXME This class needs work
 
 class PuzzleBloc extends Cubit<Puzzle> {
-  PuzzleBloc(this._puzzle) : super(_puzzle) {
-    loadPuzzlePieces();
-  }
+  PuzzleBloc(this._puzzle) : super(_puzzle);
 
   Puzzle _puzzle;
   List<PuzzlePiece> _pieces;
@@ -86,19 +84,27 @@ class PuzzleBloc extends Cubit<Puzzle> {
     await loadPuzzlePieces();
   }
 
+  Future<void> updatePuzzlePiecePosition(
+      int puzzlePieceId, int lastRow, int lastCol) async {
+    await Repository.updatePuzzlePiecePosition(puzzlePieceId, lastRow, lastCol);
+    // FIXME Add to sink?
+  }
+
   /// The image must have a width and height. maxPieces will be swapped if
   /// image is portrait (default maxpieces orientation is landscape)
   Future<void> splitImageIntoPieces(Puzzle puzzle, RC maxPieces) async {
     Image image = puzzle.image;
     DateTime start = DateTime.now();
     Utils.printDateTime(
-        prefix: 'Before INSERTING ${maxPieces.row * maxPieces.col} pieces: ',
+        prefix:
+            'PuzzleBloc.splitImageIntoPieces(): Before INSERTING ${maxPieces.row * maxPieces.col} pieces: ',
         dateFormat: Utils.DEFAULT_TIIME_FORMAT,
         date: start);
 
     if (image.width < image.height) {
       maxPieces.swap();
-      print('image is portrait. Swapped maxPieces: ${maxPieces.toString()}');
+      print(
+          'PuzzleBloc.splitImageIntoPieces(): image is portrait. Swapped maxPieces: ${maxPieces.toString()}');
     }
     var pieces = <PuzzlePiece>[];
     int width = (image.width / maxPieces.col).floor();
@@ -116,10 +122,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
             imageBytes: pieceBytes,
             imageWidth: width.toDouble(),
             imageHeight: height.toDouble(),
-            homeRow: i,
-            homeCol: j,
-            maxRow: maxPieces.row,
-            maxCol: maxPieces.col);
+            homeDy: x.toDouble(),
+            homeDx: y.toDouble());
         pieces.add(piece);
         x += width;
       }
@@ -129,13 +133,14 @@ class PuzzleBloc extends Cubit<Puzzle> {
     }
     DateTime end = DateTime.now();
     Utils.printDateTime(
-        prefix: 'After INSERTING ${pieces.length} pieces: ',
+        prefix:
+            'PuzzleBloc.splitImageIntoPieces(): After INSERTING ${pieces.length} pieces: ',
         dateFormat: Utils.DEFAULT_TIIME_FORMAT,
         date: end);
     Duration d = end.difference(start);
     Utils.printDateTime(
         prefix:
-            'Total elapsed time: ${d.inMinutes.toStringAsFixed(2)}:${d.inSeconds.toStringAsFixed(2)}',
+            'PuzzleBloc.splitImageIntoPieces(): Total elapsed time: ${d.inMinutes.toStringAsFixed(2)}:${d.inSeconds.toStringAsFixed(2)}',
         dateFormat: Utils.DEFAULT_TIIME_FORMAT);
   }
 
@@ -144,16 +149,6 @@ class PuzzleBloc extends Cubit<Puzzle> {
     _pieces
         .where((p) => p.id == puzzlePieceId)
         .map((p2) => p2.locked = isLocked);
-    _puzzlePiecesStream.add(_pieces);
-  }
-
-  Future<void> updatePuzzlePiecePosition(
-      int puzzlePieceId, int lastRow, int lastCol) async {
-    await Repository.updatePuzzlePiecePosition(puzzlePieceId, lastRow, lastCol);
-    _pieces.where((p) => p.id == puzzlePieceId).map((p2) {
-      p2.lastRow = lastRow;
-      p2.lastCol = lastCol;
-    });
     _puzzlePiecesStream.add(_pieces);
   }
 }

@@ -177,9 +177,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     final db = _database.batch();
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, home_row, home_col,
-   last_row, last_col, max_row, max_col)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (puzzle_id, image_bytes, image_width, image_height, locked, home_dy, home_dx,
+   last_dy, last_dx)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     pieces.forEach((piece) async => db.rawInsert(insert, [
           piece.puzzleId,
@@ -187,12 +187,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           piece.imageWidth,
           piece.imageHeight,
           piece.locked,
-          piece.homeRow,
-          piece.homeCol,
-          piece.lastRow,
-          piece.lastCol,
-          piece.maxRow,
-          piece.maxCol,
+          piece.homeDy,
+          piece.homeDx,
+          piece.lastTop,
+          piece.lastLeft,
         ]));
     await db.commit(noResult: true);
   }
@@ -201,9 +199,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, home_row, home_col,
-   last_row, last_col, max_row, max_col)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  (puzzle_id, image_bytes, image_width, image_height, locked, home_dy, home_dx,
+   last_dy, last_dx
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     piece.id = await db.rawInsert(insert, [
       piece.puzzleId,
@@ -211,22 +209,20 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       piece.imageWidth,
       piece.imageHeight,
       piece.locked,
-      piece.homeRow,
-      piece.homeCol,
-      piece.lastRow,
-      piece.lastCol,
-      piece.maxRow,
-      piece.maxCol
+      piece.homeDy,
+      piece.homeDx,
+      piece.lastTop,
+      piece.lastLeft
     ]);
     return piece;
   }
 
   Future<void> updatePuzzlePiece(int puzzlePieceId,
       {bool locked: false,
-      int homeRow,
-      int homeCol,
-      int lastRow,
-      int lastCol}) async {
+      int homeDy,
+      int homeDx,
+      int lastDy,
+      int lastDx}) async {
     final db = await database;
 
     final fields = <String>[];
@@ -236,21 +232,21 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       fields.add('locked = ?');
       parms.add(locked ? 1 : 0);
     }
-    if (homeRow != null) {
-      fields.add('home_row = ?');
-      parms.add(homeRow);
+    if (homeDy != null) {
+      fields.add('home_dy = ?');
+      parms.add(homeDy);
     }
-    if (homeCol != null) {
-      fields.add('home_col = ?');
-      parms.add(homeCol);
+    if (homeDx != null) {
+      fields.add('home_dx = ?');
+      parms.add(homeDx);
     }
-    if (lastRow != null) {
-      fields.add('last_row = ?');
-      parms.add(lastRow);
+    if (lastDy != null) {
+      fields.add('last_dy = ?');
+      parms.add(lastDy);
     }
-    if (lastCol != null) {
-      fields.add('last_col = ?');
-      parms.add(lastCol);
+    if (lastDx != null) {
+      fields.add('last_dx = ?');
+      parms.add(lastDx);
     }
     parms.add(puzzlePieceId);
 
@@ -430,12 +426,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_width REAL NOT NULL,
     image_height REAL NOT NULL,
     locked INTEGER NOT NULL,
-    home_row INTEGER NOT NULL,
-    home_col INTEGER NOT NULL,
-    last_row INTEGER DEFAULT NULL,
-    last_col INTEGER DEFAULT NULL,
-    max_row INTEGER NOT NULL,
-    max_col INTEGER NOT NULL,
+    home_dy REAL NOT NULL,
+    home_dx REAL NOT NULL,
+    last_dy REAL DEFAULT NULL,
+    last_dx REAL DEFAULT NULL,
     FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)
     ON DELETE NO ACTION ON UPDATE NO ACTION
     );
