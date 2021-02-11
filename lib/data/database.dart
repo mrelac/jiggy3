@@ -177,8 +177,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     final db = _database.batch();
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, home_dy, home_dx,
-   last_dy, last_dx)
+  (puzzle_id, image_bytes, image_width, image_height, locked, home_dx, home_dy,
+   last_dx, last_dy)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     pieces.forEach((piece) async => db.rawInsert(insert, [
@@ -187,10 +187,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
           piece.imageWidth,
           piece.imageHeight,
           piece.locked,
-          piece.homeDy,
           piece.homeDx,
-          piece.lastTop,
-          piece.lastLeft,
+          piece.homeDy,
+          piece.lastDx,
+          piece.lastDy,
         ]));
     await db.commit(noResult: true);
   }
@@ -199,8 +199,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, home_dy, home_dx,
-   last_dy, last_dx
+  (puzzle_id, image_bytes, image_width, image_height, locked, home_dx, home_dy,
+   last_dx, last_dy
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     piece.id = await db.rawInsert(insert, [
@@ -209,20 +209,20 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       piece.imageWidth,
       piece.imageHeight,
       piece.locked,
-      piece.homeDy,
       piece.homeDx,
-      piece.lastTop,
-      piece.lastLeft
+      piece.homeDy,
+      piece.lastDx,
+      piece.lastDy,
     ]);
     return piece;
   }
 
   Future<void> updatePuzzlePiece(int puzzlePieceId,
       {bool locked: false,
-      int homeDy,
-      int homeDx,
-      int lastDy,
-      int lastDx}) async {
+      double homeDx,
+      double homeDy,
+      double lastDx,
+      double lastDy}) async {
     final db = await database;
 
     final fields = <String>[];
@@ -232,21 +232,21 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       fields.add('locked = ?');
       parms.add(locked ? 1 : 0);
     }
-    if (homeDy != null) {
-      fields.add('home_dy = ?');
-      parms.add(homeDy);
-    }
     if (homeDx != null) {
       fields.add('home_dx = ?');
       parms.add(homeDx);
     }
-    if (lastDy != null) {
-      fields.add('last_dy = ?');
-      parms.add(lastDy);
+    if (homeDy != null) {
+      fields.add('home_dy = ?');
+      parms.add(homeDy);
     }
     if (lastDx != null) {
       fields.add('last_dx = ?');
       parms.add(lastDx);
+    }
+    if (lastDy != null) {
+      fields.add('last_dy = ?');
+      parms.add(lastDy);
     }
     parms.add(puzzlePieceId);
 

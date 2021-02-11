@@ -84,10 +84,9 @@ class PuzzleBloc extends Cubit<Puzzle> {
     await loadPuzzlePieces();
   }
 
-  Future<void> updatePuzzlePiecePosition(
-      int puzzlePieceId, int lastRow, int lastCol) async {
-    await Repository.updatePuzzlePiecePosition(puzzlePieceId, lastRow, lastCol);
-    // FIXME Add to sink?
+  Future<void> updatePuzzlePiecePosition(PuzzlePiece piece) async {
+    await Repository.updatePuzzlePiecePosition(piece.id, piece.lastDx, piece.lastDy);
+    _puzzlePiecesStream.sink.add([piece]);
   }
 
   /// The image must have a width and height. maxPieces will be swapped if
@@ -144,6 +143,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
         dateFormat: Utils.DEFAULT_TIIME_FORMAT);
   }
 
+  // FIXME! I'm not sure cacheing _pieces is a good thing cuz you can get out of sync.
+  // FIXME on the other hand, it might be too slow (blink/flash) if you *don't* cache.
   Future<void> updatePuzzlePieceLocked(int puzzlePieceId, bool isLocked) async {
     await Repository.updatePuzzlePieceLocked(puzzlePieceId, isLocked);
     _pieces

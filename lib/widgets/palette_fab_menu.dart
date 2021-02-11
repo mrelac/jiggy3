@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:fab_circular_menu/fab_circular_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:jiggy3/services/utils.dart';
 
 typedef OnColourChanged = void Function(Color);
 typedef OnColourChangeEnd = void Function(Color);
@@ -31,7 +32,7 @@ class PaletteFabMenu extends StatefulWidget {
 class _PaletteFabMenuState extends State<PaletteFabMenu>
     with WidgetsBindingObserver {
   final GlobalKey<FabCircularMenuState> _fabKey = new GlobalKey();
-  GlobalKey _fabOpacityKey = new GlobalKey();
+  final GlobalKey _fabOpacityKey = new GlobalKey();
   final GlobalKey _fabColourKey = new GlobalKey();
 
   OverlayEntry _colourOverlay;
@@ -58,12 +59,12 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
   }
 
   OverlayEntry _createOpacityOverlay() {
-    var size = _getSize(_fabOpacityKey);
+    var size = Utils.getSize(_fabOpacityKey);
     if (size == null) {
       print('SIZE IS NULL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
       return null;
     }
-    var position = _getPosition(_fabOpacityKey);
+    var position = Utils.getPosition(_fabOpacityKey);
     final double maxWidth = position.dx - 23;
     final double preferredWidth = 450;
     final double width = min(maxWidth, preferredWidth);
@@ -109,11 +110,11 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
   }
 
   OverlayEntry _createColourOverlay() {
-    var size = _getSize(_fabColourKey);
+    var size = Utils.getSize(_fabColourKey);
     if (size == null) {
       return null;
     }
-    var position = _getPosition(_fabColourKey);
+    var position = Utils.getPosition(_fabColourKey);
     double height = 130.0;
     double width = 550.0;
     double left = position.dx - 23 - width;
@@ -152,16 +153,6 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
                 ],
               ),
             )));
-  }
-
-  Offset _getPosition(GlobalKey key) {
-    final RenderBox renderBox = key.currentContext.findRenderObject();
-    return renderBox.localToGlobal(Offset.zero);
-  }
-
-  Size _getSize(GlobalKey key) {
-    final RenderBox renderBox = key.currentContext?.findRenderObject();
-    return renderBox?.size;
   }
 
   @override
@@ -293,14 +284,10 @@ class _PaletteFabMenuState extends State<PaletteFabMenu>
 
   closeSliders() {
     if (_opacityOverlay != null) {
-      if (widget.onImageOpacityChangeEnd != null)
-        widget.onImageOpacityChangeEnd;
       _opacityOverlay.remove();
       _opacityOverlay = null;
     }
     if (_colourOverlay != null) {
-      if (widget.onColourChangeEnd != null)
-        widget.onImageOpacityChangeEnd;
       _colourOverlay.remove();
       _colourOverlay = null;
     }

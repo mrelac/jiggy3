@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/services/utils.dart';
 import 'package:jiggy3/widgets/palette_fab_menu.dart';
 import 'package:jiggy3/widgets/piece.dart';
 
@@ -109,6 +111,7 @@ class _PlayPageState extends State<PlayPage> {
   Piece _droppedPiece;
   Puzzle puzzle;
   ImageProvider _imgProvider;
+  final GlobalKey _lvKey = GlobalKey();
   final _lvPieces = <Piece>[];
   final _playedPieces = <Piece>[];
 
@@ -147,10 +150,10 @@ class _PlayPageState extends State<PlayPage> {
     final lvPieces = <Piece>[];
     final playedPieces = <Piece>[];
     pieces.forEach((puzzlePiece) {
-      if (puzzlePiece.lastTop != null) {
-        playedPieces.add(Piece(puzzlePiece, devSize));
+      if (puzzlePiece.lastDy != null) {
+        playedPieces.add(Piece(puzzlePiece));
       } else {
-        lvPieces.add(Piece(puzzlePiece, devSize));
+        lvPieces.add(Piece(puzzlePiece));
       }
     });
     setState(() {
@@ -161,6 +164,12 @@ class _PlayPageState extends State<PlayPage> {
 
   @override
   Widget build(BuildContext context) {
+    // FIXME FIXME FIXME
+    // BlocProvider.of<PuzzleBloc>(context).loadPuzzlePieces();
+    // BlocProvider.of<PuzzleBloc>(context)
+    //     .puzzlePiecesStream
+    //     .listen((pieces) => _loadPieces(pieces));
+
     return Scaffold(
       backgroundColor: Colors.grey[900],
       body: _buildBody(),
@@ -191,28 +200,46 @@ class _PlayPageState extends State<PlayPage> {
   List<Widget> _draggablePlayedPieces() {
     final w = <Widget>[];
     _playedPieces
-        .forEach((piece) => w.add(piece.playedDraggable(onPieceDropped)));
+        .forEach((piece) => w.add(piece.playedPiece(devSize, onPieceDropped)));
     return w;
   }
 
   void onPieceDropped(Piece piece, Offset topLeft) {
-    print('PlayPage.onPieceDrop(): piece: $piece, topLeft: $topLeft');
+    print(
+        'PlayPage.onPieceDrop(): piece: $piece, topLeft: $topLeft. droppedInLv: ${_droppedInListView(topLeft)}');
     // Delete by id from _lvPieces and _playedPieces.
     // Round up piece to even multiple of size
-    // If dropped on palette
-    //   - if home == last then lock piece down
-    //   - If this was the last (locked) piece, the game is over, so end the game.
-    //   - Make sure lastDx and lastDy are updated
-    //   - Either:
-    //   -   call stream to update this puzzlePiece and redraw
-    //   - OR call setState() to redraw the piece on the palette.
-    // Else
-    //   - null out lastDx/lastDy
-    //   - Insert piece into listview at current location
-    //   - Update piece lastDx and lastDy
-    //   - Either:
-    //   -   call stream to update the listview
-    //   - OR: Insert piece into listview at current location
+
+    if (_droppedInListView(topLeft)) {
+      // If dropped in listview
+      //   - null out lastDx/lastDy
+      //   - Insert piece into listview at current location
+      //   - Update piece lastDx and lastDy
+      //   - Either:
+      //   -   call stream to update the listview
+      //   - OR: Insert piece into listview at current location
+    } else {
+      //   - if home == last then lock piece down
+      //   - If this was the last (locked) piece, the game is over, so end the game.
+      //   - Make sure lastDx and lastDy are updated
+      //   - Either:
+      //   -   call stream to update this puzzlePiece and redraw
+      //   - OR call setState() to redraw the piece on the palette.
+      if ((piece.puzzlePiece.homeDx == topLeft.dx) &&
+          (piece.puzzlePiece.homeDy == topLeft.dy)) {
+        piece.puzzlePiece.locked = true;
+        BlocProvider.of<PuzzleBloc>(context)
+            .updatePuzzlePieceLocked(piece.puzzlePiece.id, true);
+      }
+      piece.puzzlePiece.lastDx = topLeft.dx;
+      piece.puzzlePiece.lastDy = topLeft.dy;
+      BlocProvider.of<PuzzleBloc>(context)
+          .updatePuzzlePiecePosition(piece.puzzlePiece);
+
+      // setState(() {
+      //   _droppedPiece = piece;
+      // });
+    }
   }
 
   void onColourChanged(Color colour) {
@@ -305,11 +332,24 @@ class _PlayPageState extends State<PlayPage> {
         width: lW,
         height: lH,
         child: ListView.builder(
+            key: _lvKey,
             cacheExtent: 1500,
             scrollDirection: devIsLandscape ? Axis.vertical : Axis.horizontal,
             itemCount: _lvPieces.length,
             itemBuilder: (context, index) =>
-                _lvPieces[index].lvDraggable(devSize, onPieceDropped)));
+                _lvPieces[index].lvPiece(devIsLandscape, onPieceDropped)));
+  }
+
+  bool _droppedInListView(Offset piecePos) {
+    Offset lvPos = Utils.getPosition(_lvKey);
+    Size lvSize = Utils.getSize(_lvKey);
+    if (lvSize.width < lvSize.height) {
+      // vertical listview
+      return piecePos.dx >= lvPos.dx ? true : false;
+    } else {
+      // horizontal listview
+      return piecePos.dy >= lvPos.dy ? true : false;
+    }
   }
 
   void _updatePuzzleControls() {

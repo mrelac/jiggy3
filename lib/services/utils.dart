@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class Utils {
@@ -34,5 +37,15 @@ class Utils {
       name = '$prefix ' + (++i).toString();
     }
     return name;
+  }
+
+  static Offset getPosition(GlobalKey key) {
+    final RenderBox renderBox = key.currentContext.findRenderObject();
+    return renderBox.localToGlobal(Offset.zero);
+  }
+
+  static Size getSize(GlobalKey key) {
+    final RenderBox renderBox = key.currentContext?.findRenderObject();
+    return renderBox?.size;
   }
 }

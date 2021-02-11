@@ -10,14 +10,11 @@ typedef void OnPieceDropped(Piece piece, Offset topLeft);
 
 class Piece extends StatefulWidget {
   final PuzzlePiece puzzlePiece;
-  final Size devSize;
 
-  Piece(this.puzzlePiece, this.devSize);
+  Piece(this.puzzlePiece);
 
-  bool get devIsLandscape => devSize.width > devSize.height;
-
-  Widget lvDraggable(Size devSize, OnPieceDropped onPieceDropped) {
-    final Widget clipPath = _clipPath();
+  Widget lvPiece(bool devIsLandscape, OnPieceDropped onPieceDropped) {
+    final Widget clipPath = _clipPathImage();
     return Draggable<Piece>(
       child: _lvDragTarget(onPieceDropped),
       feedback: clipPath,
@@ -32,7 +29,7 @@ class Piece extends StatefulWidget {
 
   Widget _lvDragTarget(OnPieceDropped onPieceDropped) {
     return DragTarget<Piece>(
-      builder: (context, ok, rejected) => _clipPath(),
+      builder: (context, ok, rejected) => _clipPathImage(),
       onWillAccept: (_) => true,
       onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
         onPieceDropped(this, dtd.offset);
@@ -40,12 +37,14 @@ class Piece extends StatefulWidget {
     );
   }
 
-  Widget _clipPath() {
+  Widget _clipPathImage() {
     return ClipPath(
       child: Container(
         key: Key('${puzzlePiece.id.toString()}'),
         child: Padding(
           padding: const EdgeInsets.all(4.0),
+
+          // FIXME can this be puzzlePiece.image instead for consistency?
           child: Image.memory(puzzlePiece.imageBytes, fit: BoxFit.fill),
         ),
       ),
@@ -53,57 +52,62 @@ class Piece extends StatefulWidget {
     );
   }
 
-  Widget playedDraggable(OnPieceDropped onPieceDropped) {
-    final Widget playedPositioned = _playedPositioned();
+
+  Widget playedPiece(Size devSize, OnPieceDropped onPieceDropped) {
+    return Positioned(
+      left: puzzlePiece.lastDx,
+      top: puzzlePiece.lastDy,
+      width: puzzlePiece.imageWidth,
+      height: puzzlePiece.imageHeight,
+      child: _draggablePiece(devSize, onPieceDropped),
+    );
+  }
+
+  Widget _draggablePiece(Size devSize, OnPieceDropped onPieceDropped) {
+    final Widget clipPath = _clipPathPainter(devSize);
     return Draggable<Piece>(
-        child: _playedDragTarget(onPieceDropped),
-        feedback: playedPositioned,
+        child: _playedDragTarget(devSize, onPieceDropped),
+        feedback: clipPath,
         childWhenDragging: Container(),
         data: this);
   }
 
-  Widget _playedDragTarget(OnPieceDropped onPieceDropped) {
+  Widget _playedDragTarget(Size devSize, OnPieceDropped onPieceDropped) {
     return DragTarget<Piece>(
-      builder: (context, ok, rejected) => _playedPositioned(),
-      onAcceptWithDetails: ((DragTargetDetails dtd) {
-        onPieceDropped(this, dtd.offset);
-      }),
+      builder: (context, ok, rejected) => _clipPathPainter(devSize),
       onWillAccept: (_) => true,
+      onAcceptWithDetails: ((DragTargetDetails dtd) =>
+          onPieceDropped(this, dtd.offset)),
     );
   }
 
-  Widget _playedPositioned() {
-    return Positioned(
-      left: puzzlePiece.lastTop,
-      top: puzzlePiece.lastLeft,
-      width: puzzlePiece.imageWidth,
-      height: puzzlePiece.imageHeight,
-      child: ClipPath(
+  ClipPath _clipPathPainter(Size devSize) {
+    return ClipPath(
         child: CustomPaint(
             foregroundPainter: PiecePainter(
-                puzzlePiece.lastTop.toInt(),
-                puzzlePiece.lastLeft.toInt(),
+                puzzlePiece.lastDy.toInt(),
+                puzzlePiece.lastDx.toInt(),
                 devSize.height.toInt(),
                 devSize.width.toInt()),
             child: puzzlePiece.image),
         // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
-      ),
-    );
+      );
   }
+
 
   @override
   _PieceState createState() => _PieceState();
 
   @override
   String toStringShort() {
-    return 'Piece{puzzlePiece: {$puzzlePiece}, devSize: {$devSize]}}';
+    return 'Piece{puzzlePiece: {$puzzlePiece}}}';
   }
 }
 
 class _PieceState extends State<Piece> {
   @override
   Widget build(BuildContext context) {
-    return widget._clipPath();
+    return widget._clipPathImage();
   }
 }
 
