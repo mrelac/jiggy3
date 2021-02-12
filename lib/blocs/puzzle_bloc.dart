@@ -85,8 +85,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
   }
 
   Future<void> updatePuzzlePiecePosition(PuzzlePiece piece) async {
-    await Repository.updatePuzzlePiecePosition(piece.id, piece.lastDx, piece.lastDy);
-    _puzzlePiecesStream.sink.add([piece]);
+    await Repository.updatePuzzlePiecePosition(
+        piece.id, piece.lastDx, piece.lastDy);
   }
 
   /// The image must have a width and height. maxPieces will be swapped if

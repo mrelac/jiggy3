@@ -32,7 +32,7 @@ class Piece extends StatefulWidget {
       builder: (context, ok, rejected) => _clipPathImage(),
       onWillAccept: (_) => true,
       onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
-        onPieceDropped(this, dtd.offset);
+        onPieceDropped(dtd.data, dtd.offset);
       }),
     );
   }
@@ -55,6 +55,7 @@ class Piece extends StatefulWidget {
 
   Widget playedPiece(Size devSize, OnPieceDropped onPieceDropped) {
     return Positioned(
+      key: Key('${puzzlePiece.id}'),
       left: puzzlePiece.lastDx,
       top: puzzlePiece.lastDy,
       width: puzzlePiece.imageWidth,
@@ -66,18 +67,22 @@ class Piece extends StatefulWidget {
   Widget _draggablePiece(Size devSize, OnPieceDropped onPieceDropped) {
     final Widget clipPath = _clipPathPainter(devSize);
     return Draggable<Piece>(
-        child: _playedDragTarget(devSize, onPieceDropped),
-        feedback: clipPath,
-        childWhenDragging: Container(),
-        data: this);
+      child: _playedDragTarget(devSize, onPieceDropped),
+      feedback: clipPath,
+      childWhenDragging: Container(),
+      data: this,
+      onDraggableCanceled: (velocity, offset) {
+        print('Drag was canceled. offset = $offset');
+      },
+    );
   }
 
   Widget _playedDragTarget(Size devSize, OnPieceDropped onPieceDropped) {
     return DragTarget<Piece>(
       builder: (context, ok, rejected) => _clipPathPainter(devSize),
       onWillAccept: (_) => true,
-      onAcceptWithDetails: ((DragTargetDetails dtd) =>
-          onPieceDropped(this, dtd.offset)),
+      onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) =>
+          onPieceDropped(dtd.data, dtd.offset)),
     );
   }
 

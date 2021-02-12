@@ -225,20 +225,29 @@ class _PlayPageState extends State<PlayPage> {
       //   - Either:
       //   -   call stream to update this puzzlePiece and redraw
       //   - OR call setState() to redraw the piece on the palette.
-      if ((piece.puzzlePiece.homeDx == topLeft.dx) &&
-          (piece.puzzlePiece.homeDy == topLeft.dy)) {
-        piece.puzzlePiece.locked = true;
-        BlocProvider.of<PuzzleBloc>(context)
-            .updatePuzzlePieceLocked(piece.puzzlePiece.id, true);
+      //                 if ((piece.puzzlePiece.homeDx == topLeft.dx) &&
+      //                     (piece.puzzlePiece.homeDy == topLeft.dy)) {
+      //                   piece.puzzlePiece.locked = true;
+      //                   BlocProvider.of<PuzzleBloc>(context)
+      //                       .updatePuzzlePieceLocked(piece.puzzlePiece.id, true);
+      //                 }
+      bool fromListview = piece.puzzlePiece.lastDx == null;
+      if (fromListview) { // If piece came from lv, adjust lists.
+        _lvPieces.remove(piece);
+        // _playedPieces.add(piece);
       }
+
       piece.puzzlePiece.lastDx = topLeft.dx;
       piece.puzzlePiece.lastDy = topLeft.dy;
       BlocProvider.of<PuzzleBloc>(context)
           .updatePuzzlePiecePosition(piece.puzzlePiece);
-
-      // setState(() {
-      //   _droppedPiece = piece;
-      // });
+      if (fromListview) {
+        // _playedPieces.add(piece.playedPiece(devSize, onPieceDropped));
+        _playedPieces.add(Piece(piece.puzzlePiece));
+      }
+      setState(() {
+        // _droppedPiece = piece;
+      });
     }
   }
 
@@ -311,7 +320,7 @@ class _PlayPageState extends State<PlayPage> {
               widget.puzzle.imageColour.blue,
               _opacityFactor.value),
           colorBlendMode: BlendMode.modulate,
-          fit: BoxFit.cover,
+          // fit: BoxFit.cover,     // This stretches the image to fill image container
           image: _imgProvider,
         ));
   }

@@ -218,7 +218,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   }
 
   Future<void> updatePuzzlePiece(int puzzlePieceId,
-      {bool locked: false,
+      {bool locked,
       double homeDx,
       double homeDy,
       double lastDx,
@@ -252,7 +252,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 
     final String update =
         'UPDATE puzzle_piece SET ' + fields.join(",") + ' WHERE id = ?';
-
+// print('Database.updatePuzzlePiece: $update($parms)}');
     await db.rawUpdate(update, parms);
   }
 
