@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
@@ -108,13 +107,11 @@ class _PlayPageState extends State<PlayPage> {
                       : null;
 
   Color _colourValue;
-  Piece _droppedPiece;
   Puzzle puzzle;
   ImageProvider _imgProvider;
   final GlobalKey _lvKey = GlobalKey();
   final _lvPieces = <Piece>[];
   final _playedPieces = <Piece>[];
-
   ValueNotifier<double> _opacityFactor;
 
   void changeColor(Color color) {
@@ -151,9 +148,9 @@ class _PlayPageState extends State<PlayPage> {
     final playedPieces = <Piece>[];
     pieces.forEach((puzzlePiece) {
       if (puzzlePiece.lastDy != null) {
-        playedPieces.add(Piece(puzzlePiece));
+        playedPieces.add(Piece(puzzlePiece, GlobalKey()));
       } else {
-        lvPieces.add(Piece(puzzlePiece));
+        lvPieces.add(Piece(puzzlePiece, GlobalKey()));
       }
     });
     setState(() {
@@ -179,10 +176,7 @@ class _PlayPageState extends State<PlayPage> {
 
   Widget _buildBody() {
     final w = <Widget>[];
-    if (_droppedPiece != null) {
-      w.add(_droppedPiece);
-      _droppedPiece = null;
-    }
+
     return Stack(
         children: w
           ..add(imgIsLandscape && devIsLandscape
@@ -206,21 +200,48 @@ class _PlayPageState extends State<PlayPage> {
 
   void onPieceDropped(Piece piece, Offset topLeft) {
     print(
-        'PlayPage.onPieceDrop(): piece: $piece, topLeft: $topLeft. droppedInLv: ${_droppedInListView(topLeft)}');
-    // Delete by id from _lvPieces and _playedPieces.
+        'PlayPage.onPieceDrop(): piece: $piece, topLeft: $topLeft. droppedInLv: ${_droppedInListView(piece, topLeft)}');
+
+    // Remove from _lvPieces and _playedPieces.
+    _lvPieces.remove(piece);
+    _playedPieces.remove(piece);
+
     // Round up piece to even multiple of size
 
-    if (_droppedInListView(topLeft)) {
+    if (_droppedInListView(piece, topLeft)) {
       // If dropped in listview
       //   - null out lastDx/lastDy
-      //   - Insert piece into listview at current location
+      piece.puzzlePiece.lastDx = null;
+      piece.puzzlePiece.lastDy = null;
+
+      // Get index of nearest piece
+      if (topLeft.dx != null) {
+        for (int i = 0; i < _lvPieces.length; i++) {
+          Piece p = _lvPieces[i];
+          try {
+            int id = _lvPieces[i].puzzlePiece.id;
+            print(
+                '_lvPieces[$i] position (id $id: ${Utils.getPosition(p.key)}');
+          } catch (e) {
+            print('unable to get position for $i');
+          }
+        }
+
+        //   - Insert piece into listview at current location
+        setState(() {
+          _lvPieces.add(piece);
+        });
+        // } else {
+        //   _lvPieces.remove(piece);
+      }
+
       //   - Update piece lastDx and lastDy
       //   - Either:
       //   -   call stream to update the listview
       //   - OR: Insert piece into listview at current location
     } else {
       //   - if home == last then lock piece down
-      //   - If this was the last (locked) piece, the game is over, so end the game.
+      //   - If this was the last (locked) piece, the game is over. End the game.
       //   - Make sure lastDx and lastDy are updated
       //   - Either:
       //   -   call stream to update this puzzlePiece and redraw
@@ -232,23 +253,27 @@ class _PlayPageState extends State<PlayPage> {
       //                       .updatePuzzlePieceLocked(piece.puzzlePiece.id, true);
       //                 }
       bool fromListview = piece.puzzlePiece.lastDx == null;
-      if (fromListview) { // If piece came from lv, adjust lists.
-        _lvPieces.remove(piece);
-        // _playedPieces.add(piece);
-      }
+      //             if (fromListview) { // If piece came from lv, adjust lists.
+      //               _lvPieces.remove(piece);
+      //               // _playedPieces.add(piece);
+      //             }
 
+      _lvPieces.remove(piece);
       piece.puzzlePiece.lastDx = topLeft.dx;
       piece.puzzlePiece.lastDy = topLeft.dy;
-      BlocProvider.of<PuzzleBloc>(context)
-          .updatePuzzlePiecePosition(piece.puzzlePiece);
-      if (fromListview) {
-        // _playedPieces.add(piece.playedPiece(devSize, onPieceDropped));
-        _playedPieces.add(Piece(piece.puzzlePiece));
-      }
+      // BlocProvider.of<PuzzleBloc>(context)
+      //     .updatePuzzlePiecePosition(piece.puzzlePiece);
+      // if (fromListview) {
+      //   // _playedPieces.add(piece.playedPiece(devSize, onPieceDropped));
+      //   _playedPieces.add(Piece(piece.puzzlePiece));
+      // }
       setState(() {
-        // _droppedPiece = piece;
+        _playedPieces.add(piece);
       });
     }
+
+    BlocProvider.of<PuzzleBloc>(context)
+        .updatePuzzlePiecePosition(piece.puzzlePiece);
   }
 
   void onColourChanged(Color colour) {
@@ -336,6 +361,15 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Widget _listView() {
+    return DragTarget<Piece>(
+        builder: (context, ok, rejected) => _listViewContainer(),
+        onWillAccept: (_) => true,
+        onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
+          onPieceDropped(dtd.data, dtd.offset);
+        }));
+  }
+
+  Widget _listViewContainer() {
     return Container(
         color: _colourValue, // Background colour between pieces
         width: lW,
@@ -349,15 +383,19 @@ class _PlayPageState extends State<PlayPage> {
                 _lvPieces[index].lvPiece(devIsLandscape, onPieceDropped)));
   }
 
-  bool _droppedInListView(Offset piecePos) {
+  bool _droppedInListView(Piece piece, Offset piecePos) {
     Offset lvPos = Utils.getPosition(_lvKey);
     Size lvSize = Utils.getSize(_lvKey);
     if (lvSize.width < lvSize.height) {
       // vertical listview
-      return piecePos.dx >= lvPos.dx ? true : false;
+      return piecePos.dx + (piece.puzzlePiece.imageWidth / 2) >= lvPos.dx
+          ? true
+          : false;
     } else {
       // horizontal listview
-      return piecePos.dy >= lvPos.dy ? true : false;
+      return piecePos.dy + (piece.puzzlePiece.imageHeight) >= lvPos.dy
+          ? true
+          : false;
     }
   }
 

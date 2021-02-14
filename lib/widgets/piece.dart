@@ -11,7 +11,12 @@ typedef void OnPieceDropped(Piece piece, Offset topLeft);
 class Piece extends StatefulWidget {
   final PuzzlePiece puzzlePiece;
 
-  Piece(this.puzzlePiece);
+  // GlobalKey to identify piece position in listview. NOTE: it does not work
+  // to pass this key to the parent via Piece constructor super. It *does*,
+  // however, work if you add the key to the ClipPath that gets returned.
+  final Key key; // GlobalKey to identify piece position in listview
+
+  Piece(this.puzzlePiece, this.key);
 
   Widget lvPiece(bool devIsLandscape, OnPieceDropped onPieceDropped) {
     final Widget clipPath = _clipPathImage();
@@ -22,7 +27,7 @@ class Piece extends StatefulWidget {
       data: this,
       affinity: devIsLandscape ? Axis.horizontal : Axis.vertical,
       onDraggableCanceled: (velocity, offset) {
-        print('Drag was canceled. offset = $offset');
+        print('lvPiece: Drag was canceled. offset = $offset');
       },
     );
   }
@@ -39,8 +44,8 @@ class Piece extends StatefulWidget {
 
   Widget _clipPathImage() {
     return ClipPath(
+      key: key,   // GlobalKey used to identify absolute position in lv
       child: Container(
-        key: Key('${puzzlePiece.id.toString()}'),
         child: Padding(
           padding: const EdgeInsets.all(4.0),
 
@@ -52,19 +57,17 @@ class Piece extends StatefulWidget {
     );
   }
 
-
   Widget playedPiece(Size devSize, OnPieceDropped onPieceDropped) {
     return Positioned(
-      key: Key('${puzzlePiece.id}'),
       left: puzzlePiece.lastDx,
       top: puzzlePiece.lastDy,
       width: puzzlePiece.imageWidth,
       height: puzzlePiece.imageHeight,
-      child: _draggablePiece(devSize, onPieceDropped),
+      child: _playedPiece(devSize, onPieceDropped),
     );
   }
 
-  Widget _draggablePiece(Size devSize, OnPieceDropped onPieceDropped) {
+  Widget _playedPiece(Size devSize, OnPieceDropped onPieceDropped) {
     final Widget clipPath = _clipPathPainter(devSize);
     return Draggable<Piece>(
       child: _playedDragTarget(devSize, onPieceDropped),
@@ -72,7 +75,7 @@ class Piece extends StatefulWidget {
       childWhenDragging: Container(),
       data: this,
       onDraggableCanceled: (velocity, offset) {
-        print('Drag was canceled. offset = $offset');
+        print('_playedPiece: Drag was canceled. offset = $offset');
       },
     );
   }
@@ -88,17 +91,16 @@ class Piece extends StatefulWidget {
 
   ClipPath _clipPathPainter(Size devSize) {
     return ClipPath(
-        child: CustomPaint(
-            foregroundPainter: PiecePainter(
-                puzzlePiece.lastDy.toInt(),
-                puzzlePiece.lastDx.toInt(),
-                devSize.height.toInt(),
-                devSize.width.toInt()),
-            child: puzzlePiece.image),
-        // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
-      );
+      child: CustomPaint(
+          foregroundPainter: PiecePainter(
+              puzzlePiece.lastDy.toInt(),
+              puzzlePiece.lastDx.toInt(),
+              devSize.height.toInt(),
+              devSize.width.toInt()),
+          child: puzzlePiece.image),
+      // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
+    );
   }
-
 
   @override
   _PieceState createState() => _PieceState();

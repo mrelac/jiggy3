@@ -217,12 +217,16 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     return piece;
   }
 
+  Future<void> updatePuzzlePieceLast(
+      int puzzlePieceId, double lastDx, double lastDy) async {
+    final db = await database;
+    final String update =
+        'UPDATE puzzle_piece SET last_dx = ?, last_dy = ? WHERE id = ?';
+    await db.rawUpdate(update, [lastDx, lastDy, puzzlePieceId]);
+  }
+
   Future<void> updatePuzzlePiece(int puzzlePieceId,
-      {bool locked,
-      double homeDx,
-      double homeDy,
-      double lastDx,
-      double lastDy}) async {
+      {bool locked, double homeDx, double homeDy}) async {
     final db = await database;
 
     final fields = <String>[];
@@ -240,19 +244,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       fields.add('home_dy = ?');
       parms.add(homeDy);
     }
-    if (lastDx != null) {
-      fields.add('last_dx = ?');
-      parms.add(lastDx);
-    }
-    if (lastDy != null) {
-      fields.add('last_dy = ?');
-      parms.add(lastDy);
-    }
     parms.add(puzzlePieceId);
 
     final String update =
         'UPDATE puzzle_piece SET ' + fields.join(",") + ' WHERE id = ?';
-// print('Database.updatePuzzlePiece: $update($parms)}');
+    print('Database.updatePuzzlePiece QUERY: $update($parms)}');
     await db.rawUpdate(update, parms);
   }
 

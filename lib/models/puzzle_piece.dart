@@ -9,11 +9,11 @@ class PuzzlePiece {
   final Uint8List imageBytes;
   final double imageWidth;
   final double imageHeight;
-  bool locked; // true: piece is in its home location.
+  bool locked;   // true: piece is in its home location.
   double homeDx; // The left coordinate of this piece's home position
   double homeDy; // The top coordinate of this piece's home position
-  double lastDx; // The left coordinate of this piece's last position, or null if it's never been played.
-  double lastDy; // The top coordinate of this piece's last position, or null if it's never been played
+  double lastDx; // The left coordinate of this piece's last position, or null if in listview.
+  double lastDy; // The top coordinate of this piece's last position, or null if in listview.
   final Image image;
 
   PuzzlePiece({

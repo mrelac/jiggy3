@@ -139,7 +139,7 @@ class Repository {
   static Future<void> updatePuzzlePiecePosition(
       int puzzlePieceId, double lastDx, double lastDy) async {
     return await DBProvider.db
-        .updatePuzzlePiece(puzzlePieceId, lastDx: lastDx, lastDy: lastDy);
+        .updatePuzzlePieceLast(puzzlePieceId, lastDx, lastDy);
   }
 
   static Future<void> deletePuzzleImage(String location) async {
