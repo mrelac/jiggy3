@@ -138,6 +138,17 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
     _onWillPop();
   }
 
+  bool get devIsPortrait =>
+      MediaQuery.of(context).orientation == Orientation.portrait;
+
+  bool get devIsLandscape => !devIsPortrait;
+
+  // The listview scrollbar always spans the short side of the device
+  // (e.g. if dev is landscape, the sb is vertical; else it is horizontal)
+  bool get isHorizontalListview => devIsPortrait;
+
+  bool get isVerticalListview => !isHorizontalListview;
+
   Widget _textButton(String text, IconData iconData, Function onPressed) {
     return Row(mainAxisAlignment: MainAxisAlignment.center, children: <Widget>[
       Padding(

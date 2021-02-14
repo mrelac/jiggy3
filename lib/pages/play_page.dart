@@ -7,6 +7,11 @@ import 'package:jiggy3/services/utils.dart';
 import 'package:jiggy3/widgets/palette_fab_menu.dart';
 import 'package:jiggy3/widgets/piece.dart';
 
+const double eW = 80.0; // Element width including padding
+const double eH = 80.0; // Element height including padding
+const double fW = 80.0; // fab width including padding
+const double fH = 80.0; // fab height including padding
+
 class PlayPage extends StatefulWidget {
   final Puzzle puzzle;
 
@@ -14,6 +19,10 @@ class PlayPage extends StatefulWidget {
 
   @override
   _PlayPageState createState() => _PlayPageState();
+
+  static double get elWidth => eW;
+
+  static double get elHeight => eH;
 }
 
 class _PlayPageState extends State<PlayPage> {
@@ -39,19 +48,6 @@ class _PlayPageState extends State<PlayPage> {
   bool get isHorizontalListview => devIsPortrait;
 
   bool get isVerticalListview => !isHorizontalListview;
-
-  final double _eW = 80.0; // Element width including padding
-  final double _eH = 80.0; // Element height including padding
-  final double _fW = 80.0; // fab width including padding
-  final double _fH = 80.0; // fab height including padding
-
-  double get eW => _eW;
-
-  double get eH => _eH;
-
-  double get fW => _fW;
-
-  double get fH => _fH;
 
   double get dW => devSize.width;
 
@@ -335,7 +331,7 @@ class _PlayPageState extends State<PlayPage> {
               widget.puzzle.imageColour.blue,
               _opacityFactor.value),
           colorBlendMode: BlendMode.modulate,
-          // fit: BoxFit.cover,     // This stretches the image to fill image container
+          fit: BoxFit.fill, // This stretches the image to fill image container
           image: _imgProvider,
         ));
   }
@@ -374,7 +370,6 @@ class _PlayPageState extends State<PlayPage> {
                 _lvPieces[index].lvPiece(devIsLandscape, onPieceDropped)));
   }
 
-  // FIXME Put in Utils?
   bool _droppedInListView(Piece piece, Offset piecePos) {
     Offset lvPos = Utils.getPosition(_lvKey);
     Size lvSize = Utils.getSize(_lvKey);

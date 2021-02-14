@@ -8,6 +8,7 @@ import 'package:jiggy3/data/repository.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
 import 'package:jiggy3/models/rc.dart';
+import 'package:jiggy3/pages/play_page.dart';
 import 'package:jiggy3/services/image_service.dart';
 import 'package:jiggy3/services/utils.dart';
 
@@ -91,6 +92,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
 
   /// The image must have a width and height. maxPieces will be swapped if
   /// image is portrait (default maxpieces orientation is landscape)
+  /// lvCrossAxisSize: e.g. lv element height if lv is horiz; width if lv is vert.
   Future<void> splitImageIntoPieces(Puzzle puzzle, RC maxPieces) async {
     Image image = puzzle.image;
     DateTime start = DateTime.now();
@@ -106,11 +108,25 @@ class PuzzleBloc extends Cubit<Puzzle> {
           'PuzzleBloc.splitImageIntoPieces(): image is portrait. Swapped maxPieces: ${maxPieces.toString()}');
     }
     var pieces = <PuzzlePiece>[];
-    int width = (image.width / maxPieces.col).floor();
-    int height = (image.height / maxPieces.row).floor();
+
+    // IMPORTANT: Subtract listview width (if landscape) / height (if portrait)
+    final isImageLandscape = puzzle.image.width > puzzle.image.height;
+    final imageWidthAdjusted =
+        image.width - (isImageLandscape ? PlayPage.elWidth : 0);
+    final imageHeightAdjusted =
+        image.height - (isImageLandscape ? 0 : PlayPage.elHeight);
+    int width = (imageWidthAdjusted / maxPieces.col).ceil();
+    int height = (imageHeightAdjusted / maxPieces.row).ceil();
+
     int x = 0, y = 0;
     imglib.Image imagelib =
         imglib.decodeJpg(await ImageService.getImageBytes(image));
+
+    // Do the same thing that BoxFit.fill does
+    // Crop the image to account for listview element width.
+    imagelib = imglib.copyResize(imagelib,
+        width: imageWidthAdjusted.toInt(), height: imageHeightAdjusted.toInt());
+
     for (int i = 0; i < maxPieces.row; i++) {
       pieces.clear();
       for (int j = 0; j < maxPieces.col; j++) {
@@ -121,8 +137,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
             imageBytes: pieceBytes,
             imageWidth: width.toDouble(),
             imageHeight: height.toDouble(),
-            homeDy: y.toDouble(),
-            homeDx: x.toDouble());
+            homeDx: x.toDouble(),
+            homeDy: y.toDouble());
         pieces.add(piece);
         x += width;
       }
