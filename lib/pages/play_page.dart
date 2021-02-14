@@ -34,6 +34,12 @@ class _PlayPageState extends State<PlayPage> {
 
   bool get devIsLandscape => !devIsPortrait;
 
+  // The listview scrollbar always spans the short side of the device
+  // (e.g. if dev is landscape, the sb is vertical; else it is horizontal)
+  bool get isHorizontalListview => devIsPortrait;
+
+  bool get isVerticalListview => !isHorizontalListview;
+
   final double _eW = 80.0; // Element width including padding
   final double _eH = 80.0; // Element height including padding
   final double _fW = 80.0; // fab width including padding
@@ -206,40 +212,20 @@ class _PlayPageState extends State<PlayPage> {
     _lvPieces.remove(piece);
     _playedPieces.remove(piece);
 
-    // Round up piece to even multiple of size
-
     if (_droppedInListView(piece, topLeft)) {
-      // If dropped in listview
-      //   - null out lastDx/lastDy
       piece.puzzlePiece.lastDx = null;
       piece.puzzlePiece.lastDy = null;
 
-      // Get index of nearest piece
-      if (topLeft.dx != null) {
-        for (int i = 0; i < _lvPieces.length; i++) {
-          Piece p = _lvPieces[i];
-          try {
-            int id = _lvPieces[i].puzzlePiece.id;
-            print(
-                '_lvPieces[$i] position (id $id: ${Utils.getPosition(p.key)}');
-          } catch (e) {
-            print('unable to get position for $i');
-          }
-        }
-
-        //   - Insert piece into listview at current location
-        setState(() {
-          _lvPieces.add(piece);
-        });
-        // } else {
-        //   _lvPieces.remove(piece);
-      }
-
-      //   - Update piece lastDx and lastDy
-      //   - Either:
-      //   -   call stream to update the listview
-      //   - OR: Insert piece into listview at current location
+      // Insert piece into listview at current location
+// Utils.printListviewPieces(_lvPieces);
+      int insertAt =
+          Utils.findClosestLvElement(_lvPieces, isVerticalListview, topLeft);
+      // print('Inserting at $insertAt');
+      setState(() {
+        _lvPieces.insert(insertAt, piece);
+      });
     } else {
+      // Round up piece to even multiple of size
       //   - if home == last then lock piece down
       //   - If this was the last (locked) piece, the game is over. End the game.
       //   - Make sure lastDx and lastDy are updated
