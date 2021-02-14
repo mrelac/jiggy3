@@ -46,11 +46,14 @@ class Piece extends StatefulWidget {
     return ClipPath(
       key: key,   // GlobalKey used to identify absolute position in lv
       child: Container(
+        // FIXME get rid of this Padding if you don't need it.
         child: Padding(
-          padding: const EdgeInsets.all(4.0),
+          // padding: const EdgeInsets.all(4.0),
+          padding: const EdgeInsets.all(0.0),
 
           // FIXME can this be puzzlePiece.image instead for consistency?
-          child: Image.memory(puzzlePiece.imageBytes, fit: BoxFit.fill),
+          // child: Image.memory(puzzlePiece.imageBytes, fit: BoxFit.fill),
+          child: Image.memory(puzzlePiece.imageBytes),
         ),
       ),
       // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),

@@ -121,8 +121,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
             imageBytes: pieceBytes,
             imageWidth: width.toDouble(),
             imageHeight: height.toDouble(),
-            homeDy: x.toDouble(),
-            homeDx: y.toDouble());
+            homeDy: y.toDouble(),
+            homeDx: x.toDouble());
         pieces.add(piece);
         x += width;
       }

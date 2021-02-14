@@ -115,6 +115,8 @@ class _PlayPageState extends State<PlayPage> {
   Color _colourValue;
   Puzzle puzzle;
   ImageProvider _imgProvider;
+  final double _lockFactor =
+      0.333; // Piece is considered 'locked' if dropped within this factor.
   final GlobalKey _lvKey = GlobalKey();
   final _lvPieces = <Piece>[];
   final _playedPieces = <Piece>[];
@@ -220,39 +222,41 @@ class _PlayPageState extends State<PlayPage> {
 // Utils.printListviewPieces(_lvPieces);
       int insertAt =
           Utils.findClosestLvElement(_lvPieces, isVerticalListview, topLeft);
-      // print('Inserting at $insertAt');
+// print('Inserting at $insertAt');
       setState(() {
         _lvPieces.insert(insertAt, piece);
       });
     } else {
-      // Round up piece to even multiple of size
-      //   - if home == last then lock piece down
-      //   - If this was the last (locked) piece, the game is over. End the game.
-      //   - Make sure lastDx and lastDy are updated
-      //   - Either:
-      //   -   call stream to update this puzzlePiece and redraw
-      //   - OR call setState() to redraw the piece on the palette.
-      //                 if ((piece.puzzlePiece.homeDx == topLeft.dx) &&
-      //                     (piece.puzzlePiece.homeDy == topLeft.dy)) {
-      //                   piece.puzzlePiece.locked = true;
-      //                   BlocProvider.of<PuzzleBloc>(context)
-      //                       .updatePuzzlePieceLocked(piece.puzzlePiece.id, true);
-      //                 }
-      bool fromListview = piece.puzzlePiece.lastDx == null;
-      //             if (fromListview) { // If piece came from lv, adjust lists.
-      //               _lvPieces.remove(piece);
-      //               // _playedPieces.add(piece);
-      //             }
+      // If topLeft is within _lockedFactor of home then lock piece.
+      double pieceW = piece.puzzlePiece.imageWidth;
+      double pieceH = piece.puzzlePiece.imageHeight;
 
-      _lvPieces.remove(piece);
-      piece.puzzlePiece.lastDx = topLeft.dx;
-      piece.puzzlePiece.lastDy = topLeft.dy;
-      // BlocProvider.of<PuzzleBloc>(context)
-      //     .updatePuzzlePiecePosition(piece.puzzlePiece);
-      // if (fromListview) {
-      //   // _playedPieces.add(piece.playedPiece(devSize, onPieceDropped));
-      //   _playedPieces.add(Piece(piece.puzzlePiece));
-      // }
+      double homeDx = piece.puzzlePiece.homeDx;
+      double homeDy = piece.puzzlePiece.homeDy;
+
+      double dropDx = topLeft.dx;
+      double dropDy = topLeft.dy;
+
+      double diffDx = (dropDx - homeDx).abs();
+      double diffDy = (dropDy - homeDy).abs();
+      double lfDx = pieceW * _lockFactor;
+      double lfDy = pieceH * _lockFactor;
+
+      print('diffDx: $diffDx, diffDy: $diffDy, lfDx: $lfDx, lfDy: $lfDy');
+
+      if (((dropDx - homeDx).abs() < pieceW * _lockFactor) &&
+          ((dropDy - homeDy).abs() < pieceH * _lockFactor)) {
+        piece.puzzlePiece.lastDx = homeDx;
+        piece.puzzlePiece.lastDy = homeDy;
+        piece.puzzlePiece.locked = true;
+        print('Piece is now LOCKED!!');
+      } else {
+        piece.puzzlePiece.lastDx = topLeft.dx;
+        piece.puzzlePiece.lastDy = topLeft.dy;
+      }
+
+      //   - If this was the last (locked) piece, the game is over. End the game.
+
       setState(() {
         _playedPieces.add(piece);
       });
@@ -361,6 +365,7 @@ class _PlayPageState extends State<PlayPage> {
         width: lW,
         height: lH,
         child: ListView.builder(
+            padding: EdgeInsets.zero,
             key: _lvKey,
             cacheExtent: 1500,
             scrollDirection: devIsLandscape ? Axis.vertical : Axis.horizontal,
@@ -369,6 +374,7 @@ class _PlayPageState extends State<PlayPage> {
                 _lvPieces[index].lvPiece(devIsLandscape, onPieceDropped)));
   }
 
+  // FIXME Put in Utils?
   bool _droppedInListView(Piece piece, Offset piecePos) {
     Offset lvPos = Utils.getPosition(_lvKey);
     Size lvSize = Utils.getSize(_lvKey);

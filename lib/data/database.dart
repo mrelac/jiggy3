@@ -422,10 +422,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_width REAL NOT NULL,
     image_height REAL NOT NULL,
     locked INTEGER NOT NULL,
-    home_dy REAL NOT NULL,
     home_dx REAL NOT NULL,
-    last_dy REAL DEFAULT NULL,
+    home_dy REAL NOT NULL,
     last_dx REAL DEFAULT NULL,
+    last_dy REAL DEFAULT NULL,
     FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)
     ON DELETE NO ACTION ON UPDATE NO ACTION
     );
