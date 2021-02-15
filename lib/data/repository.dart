@@ -192,7 +192,8 @@ class Repository {
   // Returns a single album named 'Saved' containing all puzzles in progress
   static Future<Album> getAlbumSaved() async {
     final List<Puzzle> puzzles = (await DBProvider.db.getPuzzles())
-        .where((p) => p.maxPieces > -1)
+        .where((p) =>
+    ((p.maxPieces > -1) && (p.numLocked != p.maxPieces)))
         .toList();
     return Album(isSelectable: false, name: ALBUM_SAVED, puzzles: puzzles);
   }

@@ -415,8 +415,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_colour_g INTEGER,
     image_colour_b INTEGER,
     image_opacity REAL,
-    max_pieces INTEGER,
-    num_locked INTEGER
+    max_pieces INTEGER NOT NULL,
+    num_locked INTEGER NOT NULL
     );
     ''');
 

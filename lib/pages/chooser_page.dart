@@ -177,7 +177,7 @@ class _ChooserPageState extends State<ChooserPage> {
   Future<void> _navigateToNewPuzzleSetupPage(Puzzle puzzle) async {
     SystemChrome.setEnabledSystemUIOverlays([]);
 
-    Puzzle update = await Navigator.of(context).push(
+    Puzzle updatedPuzzle = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BlocProvider(
           create: (BuildContext context) => PuzzleBloc(puzzle),
@@ -187,17 +187,17 @@ class _ChooserPageState extends State<ChooserPage> {
     );
 
     // Update contains the changed puzzle, or null if the puzzle didn't change.
-    if (update != null) {
-      print('Returned from NewPuzzleSetupPage. Puzzle = $update');
+    if (updatedPuzzle != null) {
+      print('Returned from NewPuzzleSetupPage. Puzzle = $updatedPuzzle');
       BlocProvider.of<ChooserBloc>(context).getAlbums();
-      _navigateToPlayPage(update);
+      _navigateToPlayPage(updatedPuzzle);
     }
   }
 
   Future<void> _navigateToPlayPage(Puzzle puzzle) async {
     SystemChrome.setEnabledSystemUIOverlays([]);
     await puzzle.loadImage();
-    Puzzle update = await Navigator.of(context).push(
+    Puzzle updatedPuzzle = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => BlocProvider(
           create: (BuildContext context) => PuzzleBloc(puzzle),
@@ -207,9 +207,9 @@ class _ChooserPageState extends State<ChooserPage> {
     );
 
     // Update contains the changed puzzle, or null if the puzzle didn't change.
-    if (update != null) {
-      // TODO - Update PuzzleCard with latest locked/total pieces
-      // _counterBloc.setCounter(update);
+    if (updatedPuzzle != null) {
+
+      BlocProvider.of<ChooserBloc>(context).getAlbums();
     }
   }
 

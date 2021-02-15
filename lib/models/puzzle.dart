@@ -46,7 +46,7 @@ class Puzzle {
     if (imageColour != null) this.imageColour = imageColour;
     if (imageOpacity != null) this.imageOpacity = imageOpacity;
     if (maxPieces != null) this.maxPieces = maxPieces;
-    if (numLocked != null) this.numLocked = numLocked;
+    numLocked = this.numLocked ?? 0;
   }
 
   Puzzle.fromMap(Map json)

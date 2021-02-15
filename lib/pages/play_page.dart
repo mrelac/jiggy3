@@ -165,10 +165,13 @@ class _PlayPageState extends State<PlayPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[900],
-      body: _buildBody(),
-      floatingActionButton: _paletteFabMenu,
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: Colors.grey[900],
+        body: _buildBody(),
+        floatingActionButton: _paletteFabMenu,
+      ),
     );
   }
 
@@ -236,8 +239,11 @@ class _PlayPageState extends State<PlayPage> {
         piece.puzzlePiece.lastDx = homeDx;
         piece.puzzlePiece.lastDy = homeDy;
         piece.puzzlePiece.locked = true;
+        puzzle.numLocked++;
         await BlocProvider.of<PuzzleBloc>(context)
-            .updatePuzzlePieceLocked(piece.puzzlePiece);
+            .updatePuzzlePieceLocked(piece.puzzlePiece, puzzle.numLocked);
+        await BlocProvider.of<PuzzleBloc>(context)
+            .updatePuzzle(puzzle.id, numLocked: puzzle.numLocked);
         print('Piece is now LOCKED!!');
       } else {
         piece.puzzlePiece.lastDx = topLeft.dx;
@@ -391,5 +397,10 @@ class _PlayPageState extends State<PlayPage> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  Future<bool> _onWillPop() {
+    Navigator.pop(context, puzzle);
+    return Future.value(false);
   }
 }

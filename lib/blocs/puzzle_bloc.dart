@@ -39,14 +39,16 @@ class PuzzleBloc extends Cubit<Puzzle> {
       double imageHeight,
       Color imageColour,
       double imageOpacity,
-      int maxPieces}) async {
+      int maxPieces,
+      int numLocked}) async {
     await Repository.updatePuzzle(id,
         name: name,
         thumb: thumb,
         imageLocation: imageLocation,
         imageColour: imageColour,
         imageOpacity: imageOpacity,
-        maxPieces: maxPieces);
+        maxPieces: maxPieces,
+        numLocked: numLocked);
   }
 
   Future<Puzzle> createPuzzle(String name, String imageLocation) async {
@@ -69,11 +71,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
     await loadPuzzlePieces();
   }
 
-  Future<void> updatePuzzlePieceLocked(PuzzlePiece piece) async {
+  Future<void> updatePuzzlePieceLocked(PuzzlePiece piece, int numLocked) async {
     await Repository.updatePuzzlePieceLocked(piece.id, piece.locked);
-    _puzzle.numLocked =
-        piece.locked ? _puzzle.numLocked + 1 : min(0, _puzzle.numLocked - 1);
-    await Repository.updatePuzzle(piece.puzzleId, numLocked: _puzzle.numLocked);
   }
 
   Future<void> updatePuzzlePiecePosition(PuzzlePiece piece) async {
