@@ -84,8 +84,9 @@ class Utils {
         Piece p = lvPieces[i];
         try {
           int id = lvPieces[i].puzzlePiece.id;
+          bool locked = lvPieces[i].puzzlePiece.locked;
           print(
-              '_lvPieces[$i] position (id $id: ${Utils.getPosition(p.key)}');
+              '_lvPieces[$i] position (id $id: ${Utils.getPosition(p.key)}, locked: $locked}');
         } catch (e) {
           print('unable to get position for $i');
         }

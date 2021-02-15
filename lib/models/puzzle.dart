@@ -4,7 +4,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:jiggy3/data/repository.dart';
-import 'package:jiggy3/models/puzzle_piece.dart';
 
 // NOTE: EXECUTIVE DECISION: All puzzle images will be transformed to jpg,
 //       regardless where they came from (e.g. network images - create jpg file), so ImageProvider is File
@@ -17,12 +16,10 @@ class Puzzle {
   Color imageColour = Color.fromRGBO(0xff, 0xff, 0xff, IMAGE_OPACITY_DIM);
   double imageOpacity = IMAGE_OPACITY_DIM;
   Image _image;
+  int numLocked = 0;
 
   // # of pieces locked to win game. -1 means 'Game not yet started'.
   int maxPieces = -1;
-  final pieces = <PuzzlePiece>[];
-
-  int get numLocked => pieces.where((p) => p.locked).toList().length;
 
   Image get image {
     return _image;
@@ -32,7 +29,7 @@ class Puzzle {
     if (_image == null) {
       _image = await Repository.getPuzzleImage(imageLocation);
     }
-}
+  }
 
   static const double IMAGE_OPACITY_CLEAR = 1.0;
   static const double IMAGE_OPACITY_DIM = .35;
@@ -44,10 +41,12 @@ class Puzzle {
       @required this.imageLocation,
       imageColour,
       imageOpacity,
-      maxPieces}) {
+      maxPieces,
+      numLocked}) {
     if (imageColour != null) this.imageColour = imageColour;
     if (imageOpacity != null) this.imageOpacity = imageOpacity;
     if (maxPieces != null) this.maxPieces = maxPieces;
+    if (numLocked != null) this.numLocked = numLocked;
   }
 
   Puzzle.fromMap(Map json)
@@ -59,6 +58,9 @@ class Puzzle {
         imageOpacity = json['image_opacity'] {
     if (json['max_pieces'] != null) {
       this.maxPieces = json['max_pieces'];
+    }
+    if (json['num_locked'] != null) {
+      this.numLocked = json['num_locked'];
     }
     if (json['thumb'] != null) {
       this.thumb = base64Decode(json['thumb']);
@@ -80,7 +82,8 @@ class Puzzle {
         imageLocation: this.imageLocation,
         imageColour: this.imageColour,
         imageOpacity: this.imageOpacity,
-        maxPieces: this.maxPieces);
+        maxPieces: this.maxPieces,
+        numLocked: this.numLocked);
   }
 
   @override
@@ -96,7 +99,7 @@ class Puzzle {
   @override
   String toString() {
     return 'Puzzle{id: $id, name: $name, imageLocation: $imageLocation, '
-        'maxPieces: $maxPieces}';
+        'maxPieces: $maxPieces, numLocked: $numLocked}';
   }
 
   PlayState get playState {

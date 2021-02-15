@@ -148,8 +148,8 @@ SELECT a.* FROM album a
 INSERT INTO puzzle
   (name, thumb, image_location,
    image_colour_r, image_colour_g, image_colour_b,
-   image_opacity, max_pieces)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+   image_opacity, max_pieces, num_locked)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     print('Inserting puzzle ${puzzle.name}');
     puzzle.id = await db.rawInsert(insert, [
@@ -160,7 +160,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       puzzle.imageColour.green,
       puzzle.imageColour.blue,
       puzzle.imageOpacity,
-      puzzle.maxPieces
+      puzzle.maxPieces,
+      puzzle.numLocked
     ]);
     return puzzle;
   }
@@ -291,7 +292,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       String imageLocation,
       Color imageColour,
       double imageOpacity,
-      int maxPieces}) async {
+      int maxPieces,
+      int numLocked}) async {
     final db = await database;
     final fields = <String>[];
     final parms = <dynamic>[];
@@ -323,6 +325,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     if (maxPieces != null) {
       fields.add('max_pieces = ?');
       parms.add(maxPieces);
+    }
+    if (numLocked != null) {
+      fields.add('num_locked = ?');
+      parms.add(numLocked);
     }
     parms.add(id);
 
@@ -409,7 +415,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_colour_g INTEGER,
     image_colour_b INTEGER,
     image_opacity REAL,
-    max_pieces INTEGER
+    max_pieces INTEGER,
+    num_locked INTEGER
     );
     ''');
 

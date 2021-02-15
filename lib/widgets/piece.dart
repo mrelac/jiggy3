@@ -71,16 +71,20 @@ class Piece extends StatefulWidget {
   }
 
   Widget _playedPiece(Size devSize, OnPieceDropped onPieceDropped) {
-    final Widget clipPath = _clipPathPainter(devSize);
-    return Draggable<Piece>(
-      child: _playedDragTarget(devSize, onPieceDropped),
-      feedback: clipPath,
-      childWhenDragging: Container(),
-      data: this,
-      onDraggableCanceled: (velocity, offset) {
-        print('_playedPiece: Drag was canceled. offset = $offset');
-      },
-    );
+    if (this.puzzlePiece.locked) {
+      return _playedDragTarget(devSize, onPieceDropped);
+    } else {
+      final Widget clipPath = _clipPathPainter(devSize);
+      return Draggable<Piece>(
+        child: _playedDragTarget(devSize, onPieceDropped),
+        feedback: clipPath,
+        childWhenDragging: Container(),
+        data: this,
+        onDraggableCanceled: (velocity, offset) {
+          print('_playedPiece: Drag was canceled. offset = $offset');
+        },
+      );
+    }
   }
 
   Widget _playedDragTarget(Size devSize, OnPieceDropped onPieceDropped) {

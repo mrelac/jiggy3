@@ -165,12 +165,6 @@ class _PlayPageState extends State<PlayPage> {
 
   @override
   Widget build(BuildContext context) {
-    // FIXME FIXME FIXME
-    // BlocProvider.of<PuzzleBloc>(context).loadPuzzlePieces();
-    // BlocProvider.of<PuzzleBloc>(context)
-    //     .puzzlePiecesStream
-    //     .listen((pieces) => _loadPieces(pieces));
-
     return Scaffold(
       backgroundColor: Colors.grey[900],
       body: _buildBody(),
@@ -202,7 +196,7 @@ class _PlayPageState extends State<PlayPage> {
     return w;
   }
 
-  void onPieceDropped(Piece piece, Offset topLeft) {
+  void onPieceDropped(Piece piece, Offset topLeft) async {
     print(
         'PlayPage.onPieceDrop(): piece: $piece, topLeft: $topLeft. droppedInLv: ${_droppedInListView(piece, topLeft)}');
 
@@ -215,7 +209,7 @@ class _PlayPageState extends State<PlayPage> {
       piece.puzzlePiece.lastDy = null;
 
       // Insert piece into listview at current location
-// Utils.printListviewPieces(_lvPieces);
+      Utils.printListviewPieces(_lvPieces);
       int insertAt =
           Utils.findClosestLvElement(_lvPieces, isVerticalListview, topLeft);
 // print('Inserting at $insertAt');
@@ -226,13 +220,10 @@ class _PlayPageState extends State<PlayPage> {
       // If topLeft is within _lockedFactor of home then lock piece.
       double pieceW = piece.puzzlePiece.imageWidth;
       double pieceH = piece.puzzlePiece.imageHeight;
-
       double homeDx = piece.puzzlePiece.homeDx;
       double homeDy = piece.puzzlePiece.homeDy;
-
       double dropDx = topLeft.dx;
       double dropDy = topLeft.dy;
-
       double diffDx = (dropDx - homeDx).abs();
       double diffDy = (dropDy - homeDy).abs();
       double lfDx = pieceW * _lockFactor;
@@ -245,20 +236,26 @@ class _PlayPageState extends State<PlayPage> {
         piece.puzzlePiece.lastDx = homeDx;
         piece.puzzlePiece.lastDy = homeDy;
         piece.puzzlePiece.locked = true;
+        await BlocProvider.of<PuzzleBloc>(context)
+            .updatePuzzlePieceLocked(piece.puzzlePiece);
         print('Piece is now LOCKED!!');
       } else {
         piece.puzzlePiece.lastDx = topLeft.dx;
         piece.puzzlePiece.lastDy = topLeft.dy;
       }
 
-      //   - If this was the last (locked) piece, the game is over. End the game.
+      // If this was the last (locked) piece, the game is over. End the game.
+      print('numLocked = ${puzzle.numLocked}');
+      if (puzzle.numLocked == puzzle.maxPieces) {
+        print('GAME OVER!');
+      }
 
       setState(() {
         _playedPieces.add(piece);
       });
     }
 
-    BlocProvider.of<PuzzleBloc>(context)
+    await BlocProvider.of<PuzzleBloc>(context)
         .updatePuzzlePiecePosition(piece.puzzlePiece);
   }
 

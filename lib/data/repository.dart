@@ -152,14 +152,16 @@ class Repository {
       String imageLocation,
       Color imageColour,
       double imageOpacity,
-      int maxPieces}) async {
+      int maxPieces,
+      int numLocked}) async {
     await DBProvider.db.updatePuzzle(id,
         name: name,
         thumb: thumb,
         imageLocation: imageLocation,
         imageColour: imageColour,
         imageOpacity: imageOpacity,
-        maxPieces: maxPieces);
+        maxPieces: maxPieces,
+        numLocked: numLocked);
   }
 
   /// Reset the application: drop and create database and image storage file

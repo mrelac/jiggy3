@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
@@ -12,14 +13,10 @@ import 'package:jiggy3/pages/play_page.dart';
 import 'package:jiggy3/services/image_service.dart';
 import 'package:jiggy3/services/utils.dart';
 
-// FIXME FIXME FIXME This class needs work
-
 class PuzzleBloc extends Cubit<Puzzle> {
   PuzzleBloc(this._puzzle) : super(_puzzle);
 
   Puzzle _puzzle;
-  List<PuzzlePiece> _pieces;
-
   final _puzzlesStream = StreamController<Puzzle>.broadcast();
 
   Stream<Puzzle> get puzzlesStream => _puzzlesStream.stream;
@@ -50,7 +47,6 @@ class PuzzleBloc extends Cubit<Puzzle> {
         imageColour: imageColour,
         imageOpacity: imageOpacity,
         maxPieces: maxPieces);
-    loadPuzzle();
   }
 
   Future<Puzzle> createPuzzle(String name, String imageLocation) async {
@@ -61,28 +57,23 @@ class PuzzleBloc extends Cubit<Puzzle> {
     await Repository.deletePuzzleImage(location);
   }
 
-  Future<void> loadPuzzle() async {
-    _puzzle = await Repository.getPuzzleById(_puzzle.id);
-    await _puzzle.loadImage();
-    // FIXME I don't think puzzle needs to contain puzzlePieces. Delete this code?
-    if (_pieces == null) {
-      _pieces = await Repository.getPuzzlePieces(_puzzle.id);
-    }
-    _puzzle.pieces.addAll(_pieces);
-    _puzzlesStream.sink.add(_puzzle);
-  }
-
   Future<void> loadPuzzlePieces() async {
-    _pieces = await Repository.getPuzzlePieces(_puzzle.id);
-    if (_pieces.isNotEmpty) {
-      _puzzlePiecesStream.sink.add(_pieces);
+    List<PuzzlePiece> pieces = await Repository.getPuzzlePieces(_puzzle.id);
+    if (pieces.isNotEmpty) {
+      _puzzlePiecesStream.sink.add(pieces);
     }
   }
 
   Future<void> addPuzzlePiece(PuzzlePiece piece) async {
     piece = await Repository.insertPuzzlePiece(piece);
-    _pieces.add(piece);
     await loadPuzzlePieces();
+  }
+
+  Future<void> updatePuzzlePieceLocked(PuzzlePiece piece) async {
+    await Repository.updatePuzzlePieceLocked(piece.id, piece.locked);
+    _puzzle.numLocked =
+        piece.locked ? _puzzle.numLocked + 1 : min(0, _puzzle.numLocked - 1);
+    await Repository.updatePuzzle(piece.puzzleId, numLocked: _puzzle.numLocked);
   }
 
   Future<void> updatePuzzlePiecePosition(PuzzlePiece piece) async {
@@ -122,7 +113,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
     imglib.Image imagelib =
         imglib.decodeJpg(await ImageService.getImageBytes(image));
 
-    // Do the same thing that BoxFit.fill does
+    // Do the same thing that BoxFit.fill does:
     // Crop the image to account for listview element width.
     imagelib = imglib.copyResize(imagelib,
         width: imageWidthAdjusted.toInt(), height: imageHeightAdjusted.toInt());
@@ -157,15 +148,5 @@ class PuzzleBloc extends Cubit<Puzzle> {
         prefix:
             'PuzzleBloc.splitImageIntoPieces(): Total elapsed time: ${d.inMinutes.toStringAsFixed(2)}:${d.inSeconds.toStringAsFixed(2)}',
         dateFormat: Utils.DEFAULT_TIIME_FORMAT);
-  }
-
-  // FIXME! I'm not sure cacheing _pieces is a good thing cuz you can get out of sync.
-  // FIXME on the other hand, it might be too slow (blink/flash) if you *don't* cache.
-  Future<void> updatePuzzlePieceLocked(int puzzlePieceId, bool isLocked) async {
-    await Repository.updatePuzzlePieceLocked(puzzlePieceId, isLocked);
-    _pieces
-        .where((p) => p.id == puzzlePieceId)
-        .map((p2) => p2.locked = isLocked);
-    _puzzlePiecesStream.add(_pieces);
   }
 }
