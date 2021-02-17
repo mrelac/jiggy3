@@ -265,6 +265,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     }
   }
 
+  Future<void> deletePuzzlePieces(int puzzleId) async {
+    final db = await database;
+    const delete = "DELETE from puzzle_piece where puzzle_id = ?";
+    int count = await db.rawDelete(delete, [puzzleId]);
+    if (count > 0) {
+      print('Deleted $count puzzle pieces for puzzle_id $puzzleId');
+    }
+  }
+
   /// Return puzzle from puzzleId. Returns puzzle instance if found; null otherwise
   Future<Puzzle> getPuzzleById(int puzzleId) async {
     final db = await database;
@@ -293,7 +302,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       Color imageColour,
       double imageOpacity,
       int maxPieces,
-      int numLocked}) async {
+      int numLocked,
+      int previousMaxPieces}) async {
     final db = await database;
     final fields = <String>[];
     final parms = <dynamic>[];
@@ -325,6 +335,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     if (maxPieces != null) {
       fields.add('max_pieces = ?');
       parms.add(maxPieces);
+    }
+    if (previousMaxPieces != null) {
+      fields.add('previous_max_pieces = ?');
+      parms.add(previousMaxPieces);
     }
     if (numLocked != null) {
       fields.add('num_locked = ?');
@@ -416,7 +430,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_colour_b INTEGER,
     image_opacity REAL,
     max_pieces INTEGER NOT NULL,
-    num_locked INTEGER NOT NULL
+    num_locked INTEGER NOT NULL,
+    previous_max_pieces INTEGER
     );
     ''');
 

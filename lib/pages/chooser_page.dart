@@ -155,14 +155,11 @@ class _ChooserPageState extends State<ChooserPage> {
                     thumb: album.puzzles[index].thumb,
                     onLongPress: _onLongPress,
                     onTap: () async {
-                      if ((album.puzzles[index].playState ==
-                              PlayState.neverPlayed) ||
-                          (album.puzzles[index].playState ==
-                              PlayState.completed)) {
+                      if (album.puzzles[index].playState ==
+                          PlayState.notInProgress) {
                         await _navigateToNewPuzzleSetupPage(
                             (album.puzzles[index]));
-                      } else if (album.puzzles[index].playState ==
-                          PlayState.inProgress) {
+                      } else {
                         await _navigateToPlayPage(album.puzzles[index]);
                       }
                     },
@@ -208,7 +205,6 @@ class _ChooserPageState extends State<ChooserPage> {
 
     // Update contains the changed puzzle, or null if the puzzle didn't change.
     if (updatedPuzzle != null) {
-
       BlocProvider.of<ChooserBloc>(context).getAlbums();
     }
   }

@@ -153,7 +153,8 @@ class Repository {
       Color imageColour,
       double imageOpacity,
       int maxPieces,
-      int numLocked}) async {
+      int numLocked,
+      int previousMaxPieces}) async {
     await DBProvider.db.updatePuzzle(id,
         name: name,
         thumb: thumb,
@@ -161,7 +162,8 @@ class Repository {
         imageColour: imageColour,
         imageOpacity: imageOpacity,
         maxPieces: maxPieces,
-        numLocked: numLocked);
+        numLocked: numLocked,
+        previousMaxPieces: previousMaxPieces);
   }
 
   /// Reset the application: drop and create database and image storage file
@@ -192,9 +194,12 @@ class Repository {
   // Returns a single album named 'Saved' containing all puzzles in progress
   static Future<Album> getAlbumSaved() async {
     final List<Puzzle> puzzles = (await DBProvider.db.getPuzzles())
-        .where((p) =>
-    ((p.maxPieces > -1) && (p.numLocked != p.maxPieces)))
+        .where((p) => ((p.maxPieces > -1) && (p.numLocked != p.maxPieces)))
         .toList();
     return Album(isSelectable: false, name: ALBUM_SAVED, puzzles: puzzles);
+  }
+
+  static Future<void> deletePuzzlePieces(int puzzleId) async {
+    await DBProvider.db.deletePuzzlePieces(puzzleId);
   }
 }

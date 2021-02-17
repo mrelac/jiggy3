@@ -32,9 +32,9 @@ class _PlayPageState extends State<PlayPage> {
 
   Size get imgSize => _imgSize;
 
-  bool get imgIsLandscape => !imgIsPortrait;
+  bool get imageIsLandscape => !imageIsPortrait;
 
-  bool get imgIsPortrait => imgSize.width < imgSize.height;
+  bool get imageIsPortrait => imgSize.width < imgSize.height;
 
   Size get devSize => MediaQuery.of(context).size;
 
@@ -54,57 +54,57 @@ class _PlayPageState extends State<PlayPage> {
   double get dH => devSize.height;
 
   double get iW => // Image Width
-      imgIsLandscape && devIsLandscape
+      imageIsLandscape && devIsLandscape
           ? dW - eW
-          : imgIsLandscape && devIsPortrait
+          : imageIsLandscape && devIsPortrait
               ? dW
-              : imgIsPortrait && devIsLandscape
+              : imageIsPortrait && devIsLandscape
                   ? _imgSize.width
-                  : imgIsPortrait && devIsPortrait
+                  : imageIsPortrait && devIsPortrait
                       ? dW
                       : null;
 
   double get iH => // Image Height
-      imgIsLandscape && devIsLandscape
+      imageIsLandscape && devIsLandscape
           ? dH
-          : imgIsLandscape && devIsPortrait
+          : imageIsLandscape && devIsPortrait
               ? _imgSize.height
-              : imgIsPortrait && devIsLandscape
+              : imageIsPortrait && devIsLandscape
                   ? dH
-                  : imgIsPortrait && devIsPortrait
+                  : imageIsPortrait && devIsPortrait
                       ? dH - eH
                       : null;
 
   EdgeInsets get iP => // Image Padding
-      imgIsLandscape && devIsLandscape
+      imageIsLandscape && devIsLandscape
           ? EdgeInsets.zero
-          : imgIsLandscape && devIsPortrait
+          : imageIsLandscape && devIsPortrait
               ? EdgeInsets.only(top: dH - eH - iH)
-              : imgIsPortrait && devIsLandscape
+              : imageIsPortrait && devIsLandscape
                   ? EdgeInsets.only(left: dW - eW - iW)
-                  : imgIsPortrait && devIsPortrait
+                  : imageIsPortrait && devIsPortrait
                       ? EdgeInsets.zero
                       : null;
 
   double get lW => // Listview Width
-      imgIsLandscape && devIsLandscape
+      imageIsLandscape && devIsLandscape
           ? eW
-          : imgIsLandscape && devIsPortrait
+          : imageIsLandscape && devIsPortrait
               ? dW
-              : imgIsPortrait && devIsLandscape
+              : imageIsPortrait && devIsLandscape
                   ? eW
-                  : imgIsPortrait && devIsPortrait
+                  : imageIsPortrait && devIsPortrait
                       ? dW - eW
                       : null;
 
   double get lH => // Listview Height
-      imgIsLandscape && devIsLandscape
+      imageIsLandscape && devIsLandscape
           ? dH - eH
-          : imgIsLandscape && devIsPortrait
+          : imageIsLandscape && devIsPortrait
               ? eH
-              : imgIsPortrait && devIsLandscape
+              : imageIsPortrait && devIsLandscape
                   ? dH
-                  : imgIsPortrait && devIsPortrait
+                  : imageIsPortrait && devIsPortrait
                       ? eH
                       : null;
 
@@ -145,6 +145,7 @@ class _PlayPageState extends State<PlayPage> {
         onColourChangeEnd: onColourChangeEnd,
         onImageOpacityChanged: onImageOpacityChanged,
         onImageOpacityChangeEnd: onImageOpacityChangEnd);
+    Utils.setOrientations(imageIsLandscape);
   }
 
   void _loadPieces(List<PuzzlePiece> pieces) {
@@ -180,13 +181,13 @@ class _PlayPageState extends State<PlayPage> {
 
     return Stack(
         children: w
-          ..add(imgIsLandscape && devIsLandscape
+          ..add(imageIsLandscape && devIsLandscape
               ? _landXland()
-              : imgIsLandscape && devIsPortrait
+              : imageIsLandscape && devIsPortrait
                   ? _landXport()
-                  : imgIsPortrait && devIsLandscape
+                  : imageIsPortrait && devIsLandscape
                       ? _portXland()
-                      : imgIsPortrait && devIsPortrait
+                      : imageIsPortrait && devIsPortrait
                           ? _portXport()
                           : null)
           ..addAll(_draggablePlayedPieces()));
@@ -254,6 +255,7 @@ class _PlayPageState extends State<PlayPage> {
       print('numLocked = ${puzzle.numLocked}');
       if (puzzle.numLocked == puzzle.maxPieces) {
         print('GAME OVER!');
+        await BlocProvider.of<PuzzleBloc>(context).resetPuzzle(puzzle);
       }
 
       setState(() {
@@ -400,6 +402,7 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Future<bool> _onWillPop() {
+    Utils.setOrientations();
     Navigator.pop(context, puzzle);
     return Future.value(false);
   }

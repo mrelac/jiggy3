@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:jiggy3/widgets/piece.dart';
 
@@ -92,5 +93,26 @@ class Utils {
         }
       }
       print(' ');
+  }
+
+  /// Freeze device orientation by image orientation. To unfreeze, omit
+  /// the parameter.
+  static void setOrientations([bool imageIsLandscape]) {
+    final portrait = [
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown
+    ];
+    final landscape = [
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ];
+
+    final orientations = <DeviceOrientation>[];
+    if (imageIsLandscape == null)
+      orientations..addAll(portrait)..addAll(landscape);
+    else if (imageIsLandscape)
+      orientations.addAll(landscape);
+    else orientations.addAll(portrait);
+    SystemChrome.setPreferredOrientations(orientations);
   }
 }

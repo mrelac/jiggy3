@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
@@ -31,6 +30,16 @@ class PuzzleBloc extends Cubit<Puzzle> {
     _puzzlePiecesStream.close();
   }
 
+  Future<void> resetPuzzle(Puzzle puzzle) async {
+    puzzle.numLocked = 0;
+    puzzle.maxPieces = -1;
+    await Repository.updatePuzzle(puzzle.id,
+        maxPieces: puzzle.maxPieces,
+        numLocked: puzzle.numLocked,
+        previousMaxPieces: puzzle.maxPieces);
+    await Repository.deletePuzzlePieces(puzzle.id);
+  }
+
   Future<void> updatePuzzle(int id,
       {String name,
       Uint8List thumb,
@@ -40,7 +49,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
       Color imageColour,
       double imageOpacity,
       int maxPieces,
-      int numLocked}) async {
+      int numLocked,
+      int previousMaxPieces}) async {
     await Repository.updatePuzzle(id,
         name: name,
         thumb: thumb,
@@ -48,7 +58,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
         imageColour: imageColour,
         imageOpacity: imageOpacity,
         maxPieces: maxPieces,
-        numLocked: numLocked);
+        numLocked: numLocked,
+        previousMaxPieces: previousMaxPieces);
   }
 
   Future<Puzzle> createPuzzle(String name, String imageLocation) async {

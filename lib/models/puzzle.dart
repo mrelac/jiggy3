@@ -18,8 +18,9 @@ class Puzzle {
   Image _image;
   int numLocked = 0;
 
-  // # of pieces locked to win game. -1 means 'Game not yet started'.
-  int maxPieces = -1;
+  // # of pieces locked to win game. > 0 means 'Game in progress'.
+  int maxPieces = 0;
+  int previousMaxPieces;
 
   Image get image {
     return _image;
@@ -42,10 +43,12 @@ class Puzzle {
       imageColour,
       imageOpacity,
       maxPieces,
-      numLocked}) {
+      numLocked,
+      previousMaxPieces}) {
     if (imageColour != null) this.imageColour = imageColour;
     if (imageOpacity != null) this.imageOpacity = imageOpacity;
     if (maxPieces != null) this.maxPieces = maxPieces;
+    if (previousMaxPieces != null) this.previousMaxPieces = previousMaxPieces;
     numLocked = this.numLocked ?? 0;
   }
 
@@ -61,6 +64,9 @@ class Puzzle {
     }
     if (json['num_locked'] != null) {
       this.numLocked = json['num_locked'];
+    }
+    if (json['previous_max_pieces'] != null) {
+      this.previousMaxPieces = json['previous_max_pieces'];
     }
     if (json['thumb'] != null) {
       this.thumb = base64Decode(json['thumb']);
@@ -83,7 +89,8 @@ class Puzzle {
         imageColour: this.imageColour,
         imageOpacity: this.imageOpacity,
         maxPieces: this.maxPieces,
-        numLocked: this.numLocked);
+        numLocked: this.numLocked,
+        previousMaxPieces: this.previousMaxPieces);
   }
 
   @override
@@ -103,14 +110,10 @@ class Puzzle {
   }
 
   PlayState get playState {
-    if (maxPieces == -1) {
-      return PlayState.neverPlayed;
-    } else if (numLocked == maxPieces) {
-      return PlayState.completed;
-    } else {
-      return PlayState.inProgress;
-    }
+    return (maxPieces ?? 0) > 0
+        ? PlayState.inProgress
+        : PlayState.notInProgress;
   }
 }
 
-enum PlayState { neverPlayed, inProgress, completed, notPlayable }
+enum PlayState { inProgress, notInProgress }
