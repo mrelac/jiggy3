@@ -50,13 +50,12 @@ class Piece extends StatefulWidget {
         child: Padding(
           // padding: const EdgeInsets.all(4.0),
           padding: const EdgeInsets.all(0.0),
-
-          // FIXME can this be puzzlePiece.image instead for consistency?
-          // child: Image.memory(puzzlePiece.imageBytes, fit: BoxFit.fill),
           child: Image.memory(puzzlePiece.imageBytes),
         ),
       ),
-      // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
+      // This doesn't work for the listview.
+      // clipper: PieceClipper(row, col, maxrow, maxcol),
+          // lastRow, lastCol, maxRow, maxCol),
     );
   }
 
@@ -98,14 +97,15 @@ class Piece extends StatefulWidget {
 
   ClipPath _clipPathPainter(Size devSize) {
     return ClipPath(
-      child: CustomPaint(
-          foregroundPainter: PiecePainter(
-              puzzlePiece.lastDy.toInt(),
-              puzzlePiece.lastDx.toInt(),
-              devSize.height.toInt(),
-              devSize.width.toInt()),
-          child: puzzlePiece.image),
-      // clipper: PieceClipper(lastRow, lastCol, maxRow, maxCol),
+        child: CustomPaint(
+            foregroundPainter: PiecePainter(
+                puzzlePiece.lastDy.toInt(),
+                puzzlePiece.lastDx.toInt(),
+                devSize.height.toInt(),
+                devSize.width.toInt()),
+            child: Image.memory(puzzlePiece.imageBytes),
+            ),
+        // clipper: PieceClipper(row, col, maxrow, maxcol),
     );
   }
 
@@ -158,7 +158,6 @@ class PiecePainter extends CustomPainter {
       ..color = Color(0x80FFFFFF)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
-
     canvas.drawPath(getPiecePath(size, row, col, maxRow, maxCol), paint);
   }
 
