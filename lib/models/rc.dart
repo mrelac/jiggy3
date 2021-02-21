@@ -12,8 +12,6 @@ class RC {
     col = i;
   }
 
-  static final RC emptyRc = RC(row: 0, col: 0);
-
   @override
   String toString() {
     return 'RC{row: $row, col: $col}';

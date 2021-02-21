@@ -131,17 +131,6 @@ class Repository {
     return await DBProvider.db.insertPuzzlePieces(pieces);
   }
 
-  static Future<void> updatePuzzlePieceLocked(
-      int puzzlePieceId, bool isLocked) async {
-    return await DBProvider.db
-        .updatePuzzlePiece(puzzlePieceId, locked: isLocked);
-  }
-
-  static Future<void> updatePuzzlePiecePosition(
-      int puzzlePieceId, RC last) async {
-    return await DBProvider.db.updatePuzzlePieceLast(puzzlePieceId, last);
-  }
-
   static Future<void> deletePuzzleImage(String location) async {
     await JiggyFilesystem.fileImageDelete(File(location));
   }
@@ -164,6 +153,11 @@ class Repository {
         maxRc: maxRc,
         numLocked: numLocked,
         previousMaxPieces: previousMaxPieces);
+  }
+
+  static Future<void> updatePuzzlePiece(int id, {bool isLocked, RC last}) async {
+    return await DBProvider.db
+        .updatePuzzlePiece(id, locked: isLocked, last: last);
   }
 
   /// Reset the application: drop and create database and image storage file

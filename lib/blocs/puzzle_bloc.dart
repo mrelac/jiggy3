@@ -33,7 +33,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
   Future<void> resetPuzzle(Puzzle puzzle) async {
     int previousMaxPieces = puzzle.maxPieces;
     puzzle.numLocked = 0;
-    puzzle.maxRc = RC.emptyRc;
+    puzzle.maxRc = RC();
     await Repository.updatePuzzle(puzzle.id,
         maxRc: puzzle.maxRc,
         numLocked: puzzle.numLocked,
@@ -78,30 +78,26 @@ class PuzzleBloc extends Cubit<Puzzle> {
     }
   }
 
-  Future<void> updatePuzzlePieceLocked(PuzzlePiece piece, int numLocked) async {
-    await Repository.updatePuzzlePieceLocked(piece.id, piece.locked);
-  }
-
-  Future<void> updatePuzzlePiecePosition(PuzzlePiece piece) async {
-    await Repository.updatePuzzlePiecePosition(piece.id, piece.last);
+  Future<void> updatePuzzlePiece(int id, {bool isLocked, RC last}) async {
+    await Repository.updatePuzzlePiece(id, isLocked: isLocked, last: last);
   }
 
   /// The image must have a width and height. maxPieces will be swapped if
   /// image is portrait (default maxpieces orientation is landscape)
   /// lvCrossAxisSize: e.g. lv element height if lv is horiz; width if lv is vert.
-  Future<void> splitImageIntoPieces(Puzzle puzzle, RC maxPieces) async {
+  Future<void> splitImageIntoPieces(Puzzle puzzle, RC maxRc) async {
     Image image = puzzle.image;
     DateTime start = DateTime.now();
     Utils.printDateTime(
         prefix:
-            'PuzzleBloc.splitImageIntoPieces(): Before INSERTING ${maxPieces.row * maxPieces.col} pieces: ',
+            'PuzzleBloc.splitImageIntoPieces(): Before INSERTING ${maxRc.row * maxRc.col} pieces: ',
         dateFormat: Utils.DEFAULT_TIIME_FORMAT,
         date: start);
 
     if (image.width < image.height) {
-      maxPieces.swap();
+      maxRc.swap();
       print(
-          'PuzzleBloc.splitImageIntoPieces(): image is portrait. Swapped maxPieces: ${maxPieces.toString()}');
+          'PuzzleBloc.splitImageIntoPieces(): image is portrait. Swapped maxPieces: ${maxRc.toString()}');
     }
     var pieces = <PuzzlePiece>[];
 
@@ -111,8 +107,8 @@ class PuzzleBloc extends Cubit<Puzzle> {
         image.width - (isImageLandscape ? PlayPage.elWidth : 0);
     final imageHeightAdjusted =
         image.height - (isImageLandscape ? 0 : PlayPage.elHeight);
-    int width = (imageWidthAdjusted / maxPieces.col).ceil();
-    int height = (imageHeightAdjusted / maxPieces.row).ceil();
+    int width = (imageWidthAdjusted / maxRc.col).ceil();
+    int height = (imageHeightAdjusted / maxRc.row).ceil();
 
     int x = 0, y = 0;
     imglib.Image imagelib =
@@ -123,9 +119,9 @@ class PuzzleBloc extends Cubit<Puzzle> {
     imagelib = imglib.copyResize(imagelib,
         width: imageWidthAdjusted.toInt(), height: imageHeightAdjusted.toInt());
 
-    for (int r = 0; r < maxPieces.row; r++) {
+    for (int r = 0; r < maxRc.row; r++) {
       pieces.clear();
-      for (int c = 0; c < maxPieces.col; c++) {
+      for (int c = 0; c < maxRc.col; c++) {
         Uint8List pieceBytes =
             ImageService.copyCrop(imagelib, x, y, width, height);
         PuzzlePiece piece = PuzzlePiece(

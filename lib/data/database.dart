@@ -189,7 +189,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
           base64Encode(piece.imageBytes),
           piece.imageWidth,
           piece.imageHeight,
-          piece.locked,
+          piece.isLocked,
           piece.home.row,
           piece.home.col,
           piece?.last?.row,
@@ -211,7 +211,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       base64Encode(piece.imageBytes),
       piece.imageWidth,
       piece.imageHeight,
-      piece.locked,
+      piece.isLocked,
       piece.home.row,
       piece.home.col,
       piece?.last?.row,
@@ -220,15 +220,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     return piece;
   }
 
-  Future<void> updatePuzzlePieceLast(int puzzlePieceId, RC last) async {
-    final db = await database;
-    final String update =
-        'UPDATE puzzle_piece SET last_row = ?, last_col = ? WHERE id = ?';
-    await db.rawUpdate(update, [last.row, last.col, puzzlePieceId]);
-  }
-
   Future<void> updatePuzzlePiece(int puzzlePieceId,
-      {bool locked, RC home}) async {
+      {bool locked, RC home, RC last}) async {
     final db = await database;
 
     final fields = <String>[];
@@ -241,6 +234,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     if (home != null) {
       fields..add('home_row = ?')..add('home_col = ?');
       parms..add(home.row)..add(home.col);
+    }
+    if (last != null) {
+      fields..add('last_row = ?')..add('last_col = ?');
+      parms..add(last.row)..add(last.col);
     }
     parms.add(puzzlePieceId);
 
@@ -428,8 +425,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_colour_g INTEGER,
     image_colour_b INTEGER,
     image_opacity REAL,
-    max_rows INTEGER NOT NULL,
-    max_cols INTEGER NOT NULL,
+    max_rows INTEGER,
+    max_cols INTEGER,
     num_locked INTEGER NOT NULL,
     previous_max_pieces INTEGER
     );

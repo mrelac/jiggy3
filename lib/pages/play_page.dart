@@ -152,9 +152,9 @@ class _PlayPageState extends State<PlayPage> {
     final playedPieces = <Piece>[];
     pieces.forEach((puzzlePiece) {
       if (puzzlePiece.lastDy != null) {
-        playedPieces.add(Piece(puzzlePiece, GlobalKey()));
+        playedPieces.add(Piece(puzzlePiece, puzzle.maxRc, GlobalKey()));
       } else {
-        lvPieces.add(Piece(puzzlePiece, GlobalKey()));
+        lvPieces.add(Piece(puzzlePiece, puzzle.maxRc, GlobalKey()));
       }
     });
     setState(() {
@@ -175,11 +175,16 @@ class _PlayPageState extends State<PlayPage> {
     );
   }
 
-  Widget _buildBody() {
-    final w = <Widget>[];
+  Stack _stack;
 
+  Widget _buildBody() {
+    _stack = _buildStack();
+    return _stack;
+  }
+
+  Stack _buildStack() {
     return Stack(
-        children: w
+        children: <Widget>[]
           ..add(imageIsLandscape && devIsLandscape
               ? _landXland()
               : imageIsLandscape && devIsPortrait
@@ -192,63 +197,69 @@ class _PlayPageState extends State<PlayPage> {
           ..addAll(_draggablePlayedPieces()));
   }
 
+  // The locked pieces must go at the bottom of the stack (e.g. the first
+  // elements in the array) so that non-homed pieces already in the locked
+  // piece's place can be moved; else they will be trapped and can never be
+  // moved.
   List<Widget> _draggablePlayedPieces() {
-    final w = <Widget>[];
-    _playedPieces
-        .forEach((piece) => w.add(piece.playedPiece(devSize, onPieceDropped)));
-    return w;
+    _playedPieces..sort((p1, p2) => p2.puzzlePiece.isLocked ? 1 : -1);
+    return _playedPieces
+        .map((piece) => piece.playedPiece(devSize, onPieceDropped))
+        .toList();
   }
 
   void onPieceDropped(Piece piece, Offset topLeft) async {
-    print(
-        'PlayPage.onPieceDrop(): piece: $piece, topLeft: $topLeft. droppedInLv: ${_droppedInListView(piece, topLeft)}');
+    bool isDroppedInLv = _isDroppedInListView(piece, topLeft);
+    print('piece: $piece, topLeft: $topLeft. isDroppedInLv: $isDroppedInLv');
 
     // Remove from _lvPieces and _playedPieces.
     _lvPieces.remove(piece);
     _playedPieces.remove(piece);
 
-    if (_droppedInListView(piece, topLeft)) {
-      piece.puzzlePiece.last = null;
-
-      // Insert piece into listview at current location
-      Utils.printListviewPieces(_lvPieces);
-      int insertAt =
-          Utils.findClosestLvElement(_lvPieces, isVerticalListview, topLeft);
-// print('Inserting at $insertAt');
-      setState(() {
-        _lvPieces.insert(insertAt, piece);
-      });
+    if (isDroppedInLv) {
+      _droppedInLv(piece, topLeft);
     } else {
-      // Translate offset to the closest RC.
-      RC rc = findClosest(piece.puzzlePiece, topLeft);
-      if (rc == piece.puzzlePiece.home) {
-        piece.puzzlePiece.last = piece.puzzlePiece.home;
-        piece.puzzlePiece.locked = true;
-        puzzle.numLocked++;
-        await BlocProvider.of<PuzzleBloc>(context)
-            .updatePuzzlePieceLocked(piece.puzzlePiece, puzzle.numLocked);
-        await BlocProvider.of<PuzzleBloc>(context)
-            .updatePuzzle(puzzle.id, numLocked: puzzle.numLocked);
-        print('Piece is now LOCKED!!');
-      } else {
-        piece.puzzlePiece.last = rc;
-      }
-
-      // If this was the last (locked) piece, the game is over. End the game.
-      print('numLocked = ${puzzle.numLocked}');
-      if (puzzle.numLocked == puzzle.maxPieces) {
-        print('GAME OVER!');
-        await BlocProvider.of<PuzzleBloc>(context).resetPuzzle(puzzle);
-      }
-
-      setState(() {
-        puzzle.numLocked = puzzle.numLocked;
-        _playedPieces.add(piece);
-      });
+      await _droppedOnPalette(piece, topLeft);
     }
+  }
+
+  Future<void> _droppedOnPalette(Piece piece, Offset topLeft) async {
+    // Translate offset to the closest RC.
+    // Set instance variables. Then setState. Finally, update database.
+    piece.puzzlePiece.last = findClosest(piece.puzzlePiece, topLeft);
+    if (piece.puzzlePiece.last == piece.puzzlePiece.home) {
+      piece.puzzlePiece.isLocked = true;
+      puzzle.numLocked = puzzle.numLocked + 1;
+      setState(() {
+        piece.puzzlePiece.isLocked = true;
+        puzzle.numLocked = puzzle.numLocked;
+      });
+      print(
+          'piece ${piece.puzzlePiece.id} at ${piece.puzzlePiece.last} is LOCKED!');
+    }
+    setState(() => _playedPieces.add(piece));
+    await BlocProvider.of<PuzzleBloc>(context).updatePuzzlePiece(
+        piece.puzzlePiece.id,
+        last: piece.puzzlePiece.last,
+        isLocked: piece.puzzlePiece.isLocked);
+    if (puzzle.numLocked == puzzle.maxPieces) {
+      await BlocProvider.of<PuzzleBloc>(context).resetPuzzle(puzzle);
+      print('GAME OVER!');
+    }
+  }
+
+  Future<void> _droppedInLv(Piece piece, Offset topLeft) async {
+    piece.puzzlePiece.last = RC();
+    Utils.printListviewPieces(_lvPieces);
+    int insertAt = // Insert piece into listview at current location
+        Utils.findClosestLvElement(_lvPieces, isVerticalListview, topLeft);
+// print('Inserting at $insertAt');
+    setState(() {
+      _lvPieces.insert(insertAt, piece);
+    });
 
     await BlocProvider.of<PuzzleBloc>(context)
-        .updatePuzzlePiecePosition(piece.puzzlePiece);
+        .updatePuzzlePiece(piece.puzzlePiece.id, last: piece.puzzlePiece.last);
   }
 
   // Find the closest RC (column/row) to offset.
@@ -378,7 +389,7 @@ class _PlayPageState extends State<PlayPage> {
                 _lvPieces[index].lvPiece(devIsLandscape, onPieceDropped)));
   }
 
-  bool _droppedInListView(Piece piece, Offset piecePos) {
+  bool _isDroppedInListView(Piece piece, Offset piecePos) {
     Offset lvPos = Utils.getPosition(_lvKey);
     Size lvSize = Utils.getSize(_lvKey);
     if (lvSize.width < lvSize.height) {

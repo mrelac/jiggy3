@@ -10,18 +10,18 @@ class PuzzlePiece {
   final Uint8List imageBytes;
   final double imageWidth;
   final double imageHeight;
-  bool locked; // true: piece is in its home location.
-  RC home = RC.emptyRc; // This piece's 0-relative home row and column values
-  RC last = RC.emptyRc; // This piece's e 0-relative last row and column values, or null if in listview
+  bool isLocked; // true: piece is in its home location.
+  RC home = RC(); // This piece's 0-relative home row and column values
+  RC last = RC(); // This piece's e 0-relative last row and column values, or null if in listview
   final Image image;
 
-  double get homeDy => home.row * imageHeight;
+  double get homeDy => home?.row == null ? null : home.row * imageHeight;
 
-  double get homeDx => home.col * imageWidth;
+  double get homeDx => home?.col == null ? null : home.col * imageWidth;
 
-  double get lastDy => last == null ? null : last.row * imageHeight;
+  double get lastDy => last?.row == null ? null : last.row * imageHeight;
 
-  double get lastDx => last == null ? null : last.col * imageWidth;
+  double get lastDx => last?.col == null ? null : last.col * imageWidth;
 
   PuzzlePiece(
       {this.id,
@@ -29,7 +29,7 @@ class PuzzlePiece {
       this.imageBytes,
       this.imageWidth,
       this.imageHeight,
-      this.locked: false,
+      this.isLocked: false,
       this.home,
       this.last})
       : image = Image.memory(imageBytes);
@@ -48,10 +48,10 @@ class PuzzlePiece {
         imageBytes = base64Decode(json['image_bytes']),
         imageWidth = json['image_width'],
         imageHeight = json['image_height'],
-        locked = json['locked'] == 1 ? true : false,
+        isLocked = json['locked'] == 1 ? true : false,
         home = RC(row: json['home_row'], col: json['home_col']),
         last = json['last_row'] == null
-            ? null
+            ? RC()
             : RC(row: json['last_row'], col: json['last_col']),
         image = Image.memory(base64Decode(json['image_bytes']));
 
@@ -63,6 +63,6 @@ class PuzzlePiece {
         ' last: $last,'
         ' imageWidth: $imageWidth,'
         ' imageHeight: $imageHeight,'
-        ' locked: $locked';
+        ' locked: $isLocked';
   }
 }

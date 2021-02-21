@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/models/rc.dart';
 
 /// This class is a widget that represents a single PuzzlePiece with path
 /// (edge) cutouts, without Padding or Positioned/Stack properties. The idea
@@ -10,16 +11,17 @@ typedef void OnPieceDropped(Piece piece, Offset topLeft);
 
 class Piece extends StatefulWidget {
   final PuzzlePiece puzzlePiece;
+  final RC maxRc;
 
   // GlobalKey to identify piece position in listview. NOTE: it does not work
   // to pass this key to the parent via Piece constructor super. It *does*,
   // however, work if you add the key to the ClipPath that gets returned.
   final Key key; // GlobalKey to identify piece position in listview
 
-  Piece(this.puzzlePiece, this.key);
+  Piece(this.puzzlePiece, this.maxRc, this.key);
 
   Widget lvPiece(bool devIsLandscape, OnPieceDropped onPieceDropped) {
-    final Widget clipPath = _clipPathImage();
+    final Widget clipPath = _clipPathImageLV();
     return Draggable<Piece>(
       child: _lvDragTarget(onPieceDropped),
       feedback: clipPath,
@@ -44,19 +46,34 @@ class Piece extends StatefulWidget {
 
   Widget _clipPathImage() {
     return ClipPath(
-      key: key,   // GlobalKey used to identify absolute position in lv
-      child: Container(
-        // FIXME get rid of this Padding if you don't need it.
-        child: Padding(
-          // padding: const EdgeInsets.all(4.0),
-          padding: const EdgeInsets.all(0.0),
-          child: Image.memory(puzzlePiece.imageBytes),
+        key: key, // GlobalKey used to identify absolute position in lv
+        child: Container(
+          // FIXME get rid of this Padding if you don't need it.
+          child: Padding(
+            // padding: const EdgeInsets.all(4.0),
+            padding: const EdgeInsets.all(0.0),
+            child: Image.memory(puzzlePiece.imageBytes),
+          ),
         ),
-      ),
-      // This doesn't work for the listview.
-      // clipper: PieceClipper(row, col, maxrow, maxcol),
-          // lastRow, lastCol, maxRow, maxCol),
+        // clipper: PieceClipper(
+        //     puzzlePiece.home.row, puzzlePiece.home.col, maxRc.row, maxRc.col)
     );
+  }
+
+  Widget _clipPathImageLV() {
+    return ClipPath(
+        key: key, // GlobalKey used to identify absolute position in lv
+        child: Container(
+          // FIXME get rid of this Padding if you don't need it.
+          child: Padding(
+            // padding: const EdgeInsets.all(4.0),
+            padding: const EdgeInsets.all(0.0),
+            child: Image.memory(puzzlePiece.imageBytes),
+          ),
+        ),
+        // clipper: PieceClipper(
+        //     puzzlePiece.home.row, puzzlePiece.home.col, maxRc.row, maxRc.col)
+        );
   }
 
   Widget playedPiece(Size devSize, OnPieceDropped onPieceDropped) {
@@ -70,7 +87,7 @@ class Piece extends StatefulWidget {
   }
 
   Widget _playedPiece(Size devSize, OnPieceDropped onPieceDropped) {
-    if (this.puzzlePiece.locked) {
+    if (this.puzzlePiece.isLocked) {
       return _playedDragTarget(devSize, onPieceDropped);
     } else {
       final Widget clipPath = _clipPathPainter(devSize);
@@ -97,15 +114,16 @@ class Piece extends StatefulWidget {
 
   ClipPath _clipPathPainter(Size devSize) {
     return ClipPath(
-        child: CustomPaint(
-            foregroundPainter: PiecePainter(
-                puzzlePiece.lastDy.toInt(),
-                puzzlePiece.lastDx.toInt(),
-                devSize.height.toInt(),
-                devSize.width.toInt()),
-            child: Image.memory(puzzlePiece.imageBytes),
-            ),
-        // clipper: PieceClipper(row, col, maxrow, maxcol),
+      child: CustomPaint(
+          foregroundPainter: PiecePainter(
+              puzzlePiece.lastDy.toInt(),
+              puzzlePiece.lastDx.toInt(),
+              devSize.height.toInt(),
+              devSize.width.toInt()),
+          child: Image.memory(puzzlePiece.imageBytes)),
+      // clipper: PieceClipper(
+      //     puzzlePiece.home.row, puzzlePiece.home.col, maxRc.row, maxRc.col)
+
     );
   }
 
@@ -169,8 +187,8 @@ class PiecePainter extends CustomPainter {
 
 // this is the path used to clip the image and, then, to draw a border around it; here we actually draw the puzzle piece
 Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
-  final width = size.width / maxCol;
-  final height = size.height / maxRow;
+  final width = size.width;
+  final height = size.height;
   final offsetX = col * width;
   final offsetY = row * height;
   final bumpSize = height / 4;

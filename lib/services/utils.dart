@@ -85,7 +85,7 @@ class Utils {
         Piece p = lvPieces[i];
         try {
           int id = lvPieces[i].puzzlePiece.id;
-          bool locked = lvPieces[i].puzzlePiece.locked;
+          bool locked = lvPieces[i].puzzlePiece.isLocked;
           print(
               '_lvPieces[$i] position (id $id: ${Utils.getPosition(p.key)}, locked: $locked}');
         } catch (e) {
