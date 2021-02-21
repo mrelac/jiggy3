@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:jiggy3/data/repository.dart';
+import 'package:jiggy3/models/rc.dart';
 
 // NOTE: EXECUTIVE DECISION: All puzzle images will be transformed to jpg,
 //       regardless where they came from (e.g. network images - create jpg file), so ImageProvider is File
@@ -17,9 +18,11 @@ class Puzzle {
   double imageOpacity = IMAGE_OPACITY_DIM;
   Image _image;
   int numLocked = 0;
+  RC maxRc;
 
   // # of pieces locked to win game. > 0 means 'Game in progress'.
-  int maxPieces = 0;
+  int get maxPieces => maxRc == null ? 0 : maxRc.row * maxRc.col;
+
   int previousMaxPieces;
 
   Image get image {
@@ -42,12 +45,11 @@ class Puzzle {
       @required this.imageLocation,
       imageColour,
       imageOpacity,
-      maxPieces,
       numLocked,
+      this.maxRc,
       previousMaxPieces}) {
     if (imageColour != null) this.imageColour = imageColour;
     if (imageOpacity != null) this.imageOpacity = imageOpacity;
-    if (maxPieces != null) this.maxPieces = maxPieces;
     if (previousMaxPieces != null) this.previousMaxPieces = previousMaxPieces;
     numLocked = this.numLocked ?? 0;
   }
@@ -59,8 +61,8 @@ class Puzzle {
         name = json['name'],
         imageLocation = json['image_location'],
         imageOpacity = json['image_opacity'] {
-    if (json['max_pieces'] != null) {
-      this.maxPieces = json['max_pieces'];
+    if (json['max_rows'] != null) {
+      this.maxRc = RC(row: json['max_rows'], col: json['max_cols']);
     }
     if (json['num_locked'] != null) {
       this.numLocked = json['num_locked'];
@@ -88,7 +90,7 @@ class Puzzle {
         imageLocation: this.imageLocation,
         imageColour: this.imageColour,
         imageOpacity: this.imageOpacity,
-        maxPieces: this.maxPieces,
+        maxRc: this.maxRc,
         numLocked: this.numLocked,
         previousMaxPieces: this.previousMaxPieces);
   }
@@ -106,7 +108,7 @@ class Puzzle {
   @override
   String toString() {
     return 'Puzzle{id: $id, name: $name, imageLocation: $imageLocation, '
-        'maxPieces: $maxPieces, numLocked: $numLocked}';
+        'maxPieces: $maxPieces, numLocked: $numLocked, maxRc: $maxRc}';
   }
 
   PlayState get playState {

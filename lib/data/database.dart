@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/models/rc.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -148,8 +149,8 @@ SELECT a.* FROM album a
 INSERT INTO puzzle
   (name, thumb, image_location,
    image_colour_r, image_colour_g, image_colour_b,
-   image_opacity, max_pieces, num_locked)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+   image_opacity, max_rows, max_cols, num_locked)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     print('Inserting puzzle ${puzzle.name}');
     puzzle.id = await db.rawInsert(insert, [
@@ -160,7 +161,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       puzzle.imageColour.green,
       puzzle.imageColour.blue,
       puzzle.imageOpacity,
-      puzzle.maxPieces,
+      puzzle?.maxRc?.row ?? 0,
+      puzzle?.maxRc?.col ?? 0,
       puzzle.numLocked
     ]);
     return puzzle;
@@ -178,8 +180,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     final db = _database.batch();
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, home_dx, home_dy,
-   last_dx, last_dy)
+  (puzzle_id, image_bytes, image_width, image_height, locked,
+   home_row, home_col, last_row, last_col)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     pieces.forEach((piece) async => db.rawInsert(insert, [
@@ -188,10 +190,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
           piece.imageWidth,
           piece.imageHeight,
           piece.locked,
-          piece.homeDx,
-          piece.homeDy,
-          piece.lastDx,
-          piece.lastDy,
+          piece.home.row,
+          piece.home.col,
+          piece?.last?.row,
+          piece?.last?.col
         ]));
     await db.commit(noResult: true);
   }
@@ -200,8 +202,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     final db = await database;
     const String insert = '''
 INSERT INTO puzzle_piece
-  (puzzle_id, image_bytes, image_width, image_height, locked, home_dx, home_dy,
-   last_dx, last_dy
+  (puzzle_id, image_bytes, image_width, image_height, locked,
+   home_row, home_col, last_row, last_col
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
     piece.id = await db.rawInsert(insert, [
@@ -210,24 +212,23 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       piece.imageWidth,
       piece.imageHeight,
       piece.locked,
-      piece.homeDx,
-      piece.homeDy,
-      piece.lastDx,
-      piece.lastDy,
+      piece.home.row,
+      piece.home.col,
+      piece?.last?.row,
+      piece?.last?.col
     ]);
     return piece;
   }
 
-  Future<void> updatePuzzlePieceLast(
-      int puzzlePieceId, double lastDx, double lastDy) async {
+  Future<void> updatePuzzlePieceLast(int puzzlePieceId, RC last) async {
     final db = await database;
     final String update =
-        'UPDATE puzzle_piece SET last_dx = ?, last_dy = ? WHERE id = ?';
-    await db.rawUpdate(update, [lastDx, lastDy, puzzlePieceId]);
+        'UPDATE puzzle_piece SET last_row = ?, last_col = ? WHERE id = ?';
+    await db.rawUpdate(update, [last.row, last.col, puzzlePieceId]);
   }
 
   Future<void> updatePuzzlePiece(int puzzlePieceId,
-      {bool locked, double homeDx, double homeDy}) async {
+      {bool locked, RC home}) async {
     final db = await database;
 
     final fields = <String>[];
@@ -237,13 +238,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       fields.add('locked = ?');
       parms.add(locked ? 1 : 0);
     }
-    if (homeDx != null) {
-      fields.add('home_dx = ?');
-      parms.add(homeDx);
-    }
-    if (homeDy != null) {
-      fields.add('home_dy = ?');
-      parms.add(homeDy);
+    if (home != null) {
+      fields..add('home_row = ?')..add('home_col = ?');
+      parms..add(home.row)..add(home.col);
     }
     parms.add(puzzlePieceId);
 
@@ -294,14 +291,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     return puzzleList.isEmpty ? null : puzzleList.first;
   }
 
-  // Updates only the supplied parameter values.
+  // Updates only the non-null parameter values.
   Future<void> updatePuzzle(int id,
       {String name,
       Uint8List thumb,
       String imageLocation,
       Color imageColour,
       double imageOpacity,
-      int maxPieces,
+      RC maxRc,
       int numLocked,
       int previousMaxPieces}) async {
     final db = await database;
@@ -321,20 +318,22 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       parms.add(imageLocation);
     }
     if (imageColour != null) {
-      fields.add('image_colour_r = ?');
-      parms.add(imageColour.red);
-      fields.add('image_colour_g = ?');
-      parms.add(imageColour.green);
-      fields.add('image_colour_b = ?');
-      parms.add(imageColour.blue);
+      fields
+        ..add('image_colour_r = ?')
+        ..add('image_colour_g = ?')
+        ..add('image_colour_b = ?');
+      parms
+        ..add(imageColour.red)
+        ..add(imageColour.green)
+        ..add(imageColour.blue);
     }
     if (imageOpacity != null) {
       fields.add('image_opacity = ?');
       parms.add(imageOpacity);
     }
-    if (maxPieces != null) {
-      fields.add('max_pieces = ?');
-      parms.add(maxPieces);
+    if (maxRc != null) {
+      fields..add('max_rows = ?')..add('max_cols = ?');
+      parms..add(maxRc.row)..add(maxRc.col);
     }
     if (previousMaxPieces != null) {
       fields.add('previous_max_pieces = ?');
@@ -429,7 +428,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_colour_g INTEGER,
     image_colour_b INTEGER,
     image_opacity REAL,
-    max_pieces INTEGER NOT NULL,
+    max_rows INTEGER NOT NULL,
+    max_cols INTEGER NOT NULL,
     num_locked INTEGER NOT NULL,
     previous_max_pieces INTEGER
     );
@@ -444,10 +444,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     image_width REAL NOT NULL,
     image_height REAL NOT NULL,
     locked INTEGER NOT NULL,
-    home_dx REAL NOT NULL,
-    home_dy REAL NOT NULL,
-    last_dx REAL DEFAULT NULL,
-    last_dy REAL DEFAULT NULL,
+    home_row INTEGER NOT NULL,
+    home_col INTEGER NOT NULL,
+    last_row INTEGER DEFAULT NULL,
+    last_col INTEGER DEFAULT NULL,
     FOREIGN KEY (puzzle_id) REFERENCES puzzle (id)
     ON DELETE NO ACTION ON UPDATE NO ACTION
     );

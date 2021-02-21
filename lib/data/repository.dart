@@ -9,6 +9,7 @@ import 'package:jiggy3/data/jiggy_filesystem.dart';
 import 'package:jiggy3/models/album.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/models/rc.dart';
 import 'package:jiggy3/services/image_service.dart';
 
 import 'database.dart';
@@ -137,9 +138,8 @@ class Repository {
   }
 
   static Future<void> updatePuzzlePiecePosition(
-      int puzzlePieceId, double lastDx, double lastDy) async {
-    return await DBProvider.db
-        .updatePuzzlePieceLast(puzzlePieceId, lastDx, lastDy);
+      int puzzlePieceId, RC last) async {
+    return await DBProvider.db.updatePuzzlePieceLast(puzzlePieceId, last);
   }
 
   static Future<void> deletePuzzleImage(String location) async {
@@ -152,7 +152,7 @@ class Repository {
       String imageLocation,
       Color imageColour,
       double imageOpacity,
-      int maxPieces,
+      RC maxRc,
       int numLocked,
       int previousMaxPieces}) async {
     await DBProvider.db.updatePuzzle(id,
@@ -161,7 +161,7 @@ class Repository {
         imageLocation: imageLocation,
         imageColour: imageColour,
         imageOpacity: imageOpacity,
-        maxPieces: maxPieces,
+        maxRc: maxRc,
         numLocked: numLocked,
         previousMaxPieces: previousMaxPieces);
   }

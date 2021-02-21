@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:jiggy3/models/rc.dart';
 
 class PuzzlePiece {
   int id;
@@ -9,25 +10,29 @@ class PuzzlePiece {
   final Uint8List imageBytes;
   final double imageWidth;
   final double imageHeight;
-  bool locked;   // true: piece is in its home location.
-  double homeDx; // The left coordinate of this piece's home position
-  double homeDy; // The top coordinate of this piece's home position
-  double lastDx; // The left coordinate of this piece's last position, or null if in listview.
-  double lastDy; // The top coordinate of this piece's last position, or null if in listview.
+  bool locked; // true: piece is in its home location.
+  RC home = RC.emptyRc; // This piece's 0-relative home row and column values
+  RC last = RC.emptyRc; // This piece's e 0-relative last row and column values, or null if in listview
   final Image image;
 
-  PuzzlePiece({
-    this.id,
-    this.puzzleId,
-    this.imageBytes,
-    this.imageWidth,
-    this.imageHeight,
-    this.locked: false,
-    this.homeDx,
-    this.homeDy,
-    this.lastDx,
-    this.lastDy,
-  }) : image = Image.memory(imageBytes);
+  double get homeDy => home.row * imageHeight;
+
+  double get homeDx => home.col * imageWidth;
+
+  double get lastDy => last == null ? null : last.row * imageHeight;
+
+  double get lastDx => last == null ? null : last.col * imageWidth;
+
+  PuzzlePiece(
+      {this.id,
+      this.puzzleId,
+      this.imageBytes,
+      this.imageWidth,
+      this.imageHeight,
+      this.locked: false,
+      this.home,
+      this.last})
+      : image = Image.memory(imageBytes);
 
   PuzzlePiece.fromMap(Map json)
       : assert(json['id'] != null),
@@ -36,28 +41,26 @@ class PuzzlePiece {
         assert(json['image_width'] != null),
         assert(json['image_height'] != null),
         assert(json['locked'] != null),
-        assert(json['home_dx'] != null),
-        assert(json['home_dy'] != null),
+        assert(json['home_row'] != null),
+        assert(json['home_col'] != null),
         id = json['id'],
         puzzleId = json['puzzle_id'],
         imageBytes = base64Decode(json['image_bytes']),
         imageWidth = json['image_width'],
         imageHeight = json['image_height'],
         locked = json['locked'] == 1 ? true : false,
-        homeDx = json['home_dx'],
-        homeDy = json['home_dy'],
-        lastDx = json['last_dx'],
-        lastDy = json['last_dy'],
+        home = RC(row: json['home_row'], col: json['home_col']),
+        last = json['last_row'] == null
+            ? null
+            : RC(row: json['last_row'], col: json['last_col']),
         image = Image.memory(base64Decode(json['image_bytes']));
 
   @override
   String toString() {
     return 'PuzzlePiece{id: $id,'
         ' puzzleId: $puzzleId,'
-        ' homeDx: $homeDx,'
-        ' homeDy: $homeDy,'
-        ' lastDx: $lastDx,'
-        ' lastDy: $lastDy,'
+        ' home: $home,'
+        ' last: $last,'
         ' imageWidth: $imageWidth,'
         ' imageHeight: $imageHeight,'
         ' locked: $locked';

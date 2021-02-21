@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/models/rc.dart';
 import 'package:jiggy3/services/utils.dart';
 import 'package:jiggy3/widgets/palette_fab_menu.dart';
 import 'package:jiggy3/widgets/piece.dart';
@@ -111,8 +112,6 @@ class _PlayPageState extends State<PlayPage> {
   Color _colourValue;
   Puzzle puzzle;
   ImageProvider _imgProvider;
-  final double _lockFactor =
-      0.333; // Piece is considered 'locked' if dropped within this factor.
   final GlobalKey _lvKey = GlobalKey();
   final _lvPieces = <Piece>[];
   final _playedPieces = <Piece>[];
@@ -209,8 +208,7 @@ class _PlayPageState extends State<PlayPage> {
     _playedPieces.remove(piece);
 
     if (_droppedInListView(piece, topLeft)) {
-      piece.puzzlePiece.lastDx = null;
-      piece.puzzlePiece.lastDy = null;
+      piece.puzzlePiece.last = null;
 
       // Insert piece into listview at current location
       Utils.printListviewPieces(_lvPieces);
@@ -221,24 +219,10 @@ class _PlayPageState extends State<PlayPage> {
         _lvPieces.insert(insertAt, piece);
       });
     } else {
-      // If topLeft is within _lockedFactor of home then lock piece.
-      double pieceW = piece.puzzlePiece.imageWidth;
-      double pieceH = piece.puzzlePiece.imageHeight;
-      double homeDx = piece.puzzlePiece.homeDx;
-      double homeDy = piece.puzzlePiece.homeDy;
-      double dropDx = topLeft.dx;
-      double dropDy = topLeft.dy;
-      double diffDx = (dropDx - homeDx).abs();
-      double diffDy = (dropDy - homeDy).abs();
-      double lfDx = pieceW * _lockFactor;
-      double lfDy = pieceH * _lockFactor;
-
-      print('diffDx: $diffDx, diffDy: $diffDy, lfDx: $lfDx, lfDy: $lfDy');
-
-      if (((dropDx - homeDx).abs() < pieceW * _lockFactor) &&
-          ((dropDy - homeDy).abs() < pieceH * _lockFactor)) {
-        piece.puzzlePiece.lastDx = homeDx;
-        piece.puzzlePiece.lastDy = homeDy;
+      // Translate offset to the closest RC.
+      RC rc = findClosest(piece.puzzlePiece, topLeft);
+      if (rc == piece.puzzlePiece.home) {
+        piece.puzzlePiece.last = piece.puzzlePiece.home;
         piece.puzzlePiece.locked = true;
         puzzle.numLocked++;
         await BlocProvider.of<PuzzleBloc>(context)
@@ -247,8 +231,7 @@ class _PlayPageState extends State<PlayPage> {
             .updatePuzzle(puzzle.id, numLocked: puzzle.numLocked);
         print('Piece is now LOCKED!!');
       } else {
-        piece.puzzlePiece.lastDx = topLeft.dx;
-        piece.puzzlePiece.lastDy = topLeft.dy;
+        piece.puzzlePiece.last = rc;
       }
 
       // If this was the last (locked) piece, the game is over. End the game.
@@ -259,12 +242,32 @@ class _PlayPageState extends State<PlayPage> {
       }
 
       setState(() {
+        puzzle.numLocked = puzzle.numLocked;
         _playedPieces.add(piece);
       });
     }
 
     await BlocProvider.of<PuzzleBloc>(context)
         .updatePuzzlePiecePosition(piece.puzzlePiece);
+  }
+
+  // Find the closest RC (column/row) to offset.
+  RC findClosest(PuzzlePiece pp, Offset offset) {
+    int dxF = (offset.dx / pp.imageWidth).floor();
+    int dxC = (offset.dx / pp.imageWidth).ceil();
+    int colF = (offset.dx - (dxF * pp.imageWidth)).abs().toInt();
+    int colC = (offset.dx - (dxC * pp.imageWidth)).abs().toInt();
+    int col = colF < colC ? dxF : dxC;
+
+    int dyF = (offset.dy / pp.imageHeight).floor();
+    int dyC = (offset.dy / pp.imageHeight).ceil();
+    int rowF = (offset.dy - (dyF * pp.imageHeight)).abs().toInt();
+    int rowC = (offset.dy - (dyC * pp.imageHeight)).abs().toInt();
+    int row = rowF < rowC ? dyF : dyC;
+
+    final rc = RC(row: row, col: col);
+    print('closest RC = $rc');
+    return rc;
   }
 
   void onColourChanged(Color colour) {

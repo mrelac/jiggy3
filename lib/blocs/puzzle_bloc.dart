@@ -31,12 +31,13 @@ class PuzzleBloc extends Cubit<Puzzle> {
   }
 
   Future<void> resetPuzzle(Puzzle puzzle) async {
+    int previousMaxPieces = puzzle.maxPieces;
     puzzle.numLocked = 0;
-    puzzle.maxPieces = -1;
+    puzzle.maxRc = RC.emptyRc;
     await Repository.updatePuzzle(puzzle.id,
-        maxPieces: puzzle.maxPieces,
+        maxRc: puzzle.maxRc,
         numLocked: puzzle.numLocked,
-        previousMaxPieces: puzzle.maxPieces);
+        previousMaxPieces: previousMaxPieces);
     await Repository.deletePuzzlePieces(puzzle.id);
   }
 
@@ -48,7 +49,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
       double imageHeight,
       Color imageColour,
       double imageOpacity,
-      int maxPieces,
+      RC maxRc,
       int numLocked,
       int previousMaxPieces}) async {
     await Repository.updatePuzzle(id,
@@ -57,7 +58,7 @@ class PuzzleBloc extends Cubit<Puzzle> {
         imageLocation: imageLocation,
         imageColour: imageColour,
         imageOpacity: imageOpacity,
-        maxPieces: maxPieces,
+        maxRc: maxRc,
         numLocked: numLocked,
         previousMaxPieces: previousMaxPieces);
   }
@@ -77,18 +78,12 @@ class PuzzleBloc extends Cubit<Puzzle> {
     }
   }
 
-  Future<void> addPuzzlePiece(PuzzlePiece piece) async {
-    piece = await Repository.insertPuzzlePiece(piece);
-    await loadPuzzlePieces();
-  }
-
   Future<void> updatePuzzlePieceLocked(PuzzlePiece piece, int numLocked) async {
     await Repository.updatePuzzlePieceLocked(piece.id, piece.locked);
   }
 
   Future<void> updatePuzzlePiecePosition(PuzzlePiece piece) async {
-    await Repository.updatePuzzlePiecePosition(
-        piece.id, piece.lastDx, piece.lastDy);
+    await Repository.updatePuzzlePiecePosition(piece.id, piece.last);
   }
 
   /// The image must have a width and height. maxPieces will be swapped if
@@ -128,18 +123,18 @@ class PuzzleBloc extends Cubit<Puzzle> {
     imagelib = imglib.copyResize(imagelib,
         width: imageWidthAdjusted.toInt(), height: imageHeightAdjusted.toInt());
 
-    for (int i = 0; i < maxPieces.row; i++) {
+    for (int r = 0; r < maxPieces.row; r++) {
       pieces.clear();
-      for (int j = 0; j < maxPieces.col; j++) {
+      for (int c = 0; c < maxPieces.col; c++) {
         Uint8List pieceBytes =
             ImageService.copyCrop(imagelib, x, y, width, height);
         PuzzlePiece piece = PuzzlePiece(
-            puzzleId: puzzle.id,
-            imageBytes: pieceBytes,
-            imageWidth: width.toDouble(),
-            imageHeight: height.toDouble(),
-            homeDx: x.toDouble(),
-            homeDy: y.toDouble());
+          puzzleId: puzzle.id,
+          imageBytes: pieceBytes,
+          imageWidth: width.toDouble(),
+          imageHeight: height.toDouble(),
+          home: RC(row: r, col: c),
+        );
         pieces.add(piece);
         x += width;
       }
