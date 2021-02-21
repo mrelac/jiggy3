@@ -17,7 +17,7 @@ class NewPuzzleSetupPage extends StatefulWidget {
 
 class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   File _croppedImageFile;
-  RC _maxPieces;
+  RC _maxRc;
   Puzzle _returnedPuzzle;
   final _sizeBoxPadding = EdgeInsets.all(8.0);
 
@@ -32,8 +32,8 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
           _puzzleName(),
           _puzzleSizeChooser,
           _puzzleSizes(),
-          if (_maxPieces != null) _crop(),
-          if (_maxPieces != null) _play()
+          if (_maxRc != null) _crop(),
+          if (_maxRc != null) _play()
         ]),
       ),
     );
@@ -77,7 +77,7 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   Widget _puzzleSizeButton(RC puzzleSize) {
     return ButtonTheme(
       child: RaisedButton(
-        onPressed: () => setState(() => _maxPieces = puzzleSize),
+        onPressed: () => setState(() => _maxRc = puzzleSize),
         textColor: Colors.white70,
         color: Colors.grey[700],
         padding: _sizeBoxPadding,
@@ -121,20 +121,20 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
       await puzzleBloc.deletePuzzleImage(wp.imageLocation);
       Puzzle p = await puzzleBloc.createPuzzle(wp.name, _croppedImageFile.path);
       _returnedPuzzle
-        ..maxPieces = _maxPieces.row * _maxPieces.col
+        ..maxRc = _maxRc
         ..imageLocation = p.imageLocation
         ..thumb = p.thumb;
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
-          maxPieces: _returnedPuzzle.maxPieces,
+          maxRc: _returnedPuzzle.maxRc,
           imageLocation: _returnedPuzzle.imageLocation,
           thumb: _returnedPuzzle.thumb);
     } else {
-      _returnedPuzzle.maxPieces = _maxPieces.row * _maxPieces.col;
+      _returnedPuzzle.maxRc = _maxRc;
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
-          maxPieces: _returnedPuzzle.maxPieces);
+          maxRc: _returnedPuzzle.maxRc);
     }
     await _returnedPuzzle.loadImage();
-    await puzzleBloc.splitImageIntoPieces(_returnedPuzzle, _maxPieces);
+    await puzzleBloc.splitImageIntoPieces(_returnedPuzzle, _maxRc);
     _onWillPop();
   }
 
@@ -167,7 +167,7 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
             color: Colors.yellow,
           ),
           child: Center(
-              child: IconButton(
+              child: IconButton(onPressed: null,
             iconSize: 48.0,
             icon: Icon(iconData, color: Colors.black),
           )),
@@ -178,7 +178,7 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
 
   BoxDecoration _puzzleSizeDecoration(int maxPuzzlePieces) {
     BoxDecoration bd;
-    int selectedSize = _maxPieces == null ? 0 : _maxPieces.row * _maxPieces.col;
+    int selectedSize = _maxRc == null ? 0 : _maxRc.row * _maxRc.col;
     if (maxPuzzlePieces == selectedSize) {
       bd = BoxDecoration(
           border: Border.all(color: Colors.yellow, width: 4.0),
@@ -209,16 +209,16 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
   /// image to be split is portrait, so don't worry about orientation here.
   List<RC> _computeMaxPieces() {
     return <RC>[
-      RC(3, 4),   //   12
-      RC(6, 8),   //   48
-      RC(9, 12),  //  108
-      RC(12, 16), //  192
-      RC(15, 20), //  300
-      RC(18, 24), //  432
-      RC(24, 32), //  768
-      RC(27, 36), //  972
-      RC(30, 40), // 1200
-      RC(33, 44), // 1452
+      RC(row: 3, col: 4), //   12
+      RC(row: 6, col: 8), //   48
+      RC(row: 9, col: 12), //  108
+      RC(row: 12, col: 16), //  192
+      RC(row: 15, col: 20), //  300
+      RC(row: 18, col: 24), //  432
+      RC(row: 24, col: 32), //  768
+      RC(row: 27, col: 36), //  972
+      RC(row: 30, col: 40), // 1200
+      RC(row: 33, col: 44), // 1452
     ];
   }
 }
