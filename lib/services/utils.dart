@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:jiggy3/widgets/piece.dart';
+import 'package:jiggy3/widgets/piece2.dart';
 
 class Utils {
   static const DEFAULT_DATE_FORMAT_FILE = 'yyyy-MM-dd_HH.mm.ss';
@@ -79,13 +80,43 @@ class Utils {
     }
     return nearest ?? lvPieces.length + 1;
   }
+  static int findClosestLvElement2(List<Piece2> lvPieces2, bool isVerticalListview, Offset piecePos) {
+    if (lvPieces2.isEmpty) {
+      return 0;
+    }
+    int nearest;
+    for (int i = 0; i < lvPieces2.length; i++) {
+      Offset offset = Utils.getPosition(lvPieces2[i].key);
+// print('i: $i, offset: $offset, piecePos: $piecePos');
 
-  static void printListviewPieces(List<Piece> lvPieces) {
-      for (int i = 0; i < lvPieces.length; i++) {
-        Piece p = lvPieces[i];
+      if (isVerticalListview) {
+        if (offset.dy > piecePos.dy) {
+          nearest = max(0, i - 1);
+          break;
+        } else {
+          nearest = i + 1;
+        }
+      } else {
+        if (offset.dx > piecePos.dx) {
+          nearest = max(0, i - 1);
+          break;
+        } else {
+          nearest = i + 1;
+        }
+      }
+    }
+    return nearest ?? lvPieces2.length + 1;
+  }
+
+
+
+
+  static void printListviewPieces(List<Piece2> lvPieces2) {
+      for (int i = 0; i < lvPieces2.length; i++) {
+        Piece2 p = lvPieces2[i];
         try {
-          int id = lvPieces[i].puzzlePiece.id;
-          bool locked = lvPieces[i].puzzlePiece.isLocked;
+          int id = lvPieces2[i].puzzlePiece.id;
+          bool locked = lvPieces2[i].puzzlePiece.isLocked;
           print(
               '_lvPieces[$i] position (id $id: ${Utils.getPosition(p.key)}, locked: $locked}');
         } catch (e) {
@@ -93,6 +124,20 @@ class Utils {
         }
       }
       print(' ');
+  }
+  static void printListviewPieces2(List<Piece2> lvPieces2) {
+    for (int i = 0; i < lvPieces2.length; i++) {
+      Piece2 p = lvPieces2[i];
+      try {
+        int id = lvPieces2[i].puzzlePiece.id;
+        bool locked = lvPieces2[i].puzzlePiece.isLocked;
+        print(
+            '_lvPieces[$i] position (id $id: ${Utils.getPosition(p.key)}, locked: $locked}');
+      } catch (e) {
+        print('unable to get position for $i');
+      }
+    }
+    print(' ');
   }
 
   /// Freeze device orientation by image orientation. To unfreeze, omit

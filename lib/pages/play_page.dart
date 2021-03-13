@@ -6,7 +6,7 @@ import 'package:jiggy3/models/puzzle_piece.dart';
 import 'package:jiggy3/models/rc.dart';
 import 'package:jiggy3/services/utils.dart';
 import 'package:jiggy3/widgets/palette_fab_menu.dart';
-import 'package:jiggy3/widgets/piece.dart';
+import 'package:jiggy3/widgets/piece2.dart';
 
 const double eW = 80.0; // Element width including padding
 const double eH = 80.0; // Element height including padding
@@ -113,8 +113,8 @@ class _PlayPageState extends State<PlayPage> {
   Puzzle puzzle;
   ImageProvider _imgProvider;
   final GlobalKey _lvKey = GlobalKey();
-  final _lvPieces = <Piece>[];
-  final _playedPieces = <Piece>[];
+  final _lvPieces = <Piece2>[];
+  final _playedPieces = <Piece2>[];
   ValueNotifier<double> _opacityFactor;
 
   void changeColor(Color color) {
@@ -148,13 +148,25 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   void _loadPieces(List<PuzzlePiece> pieces) {
-    final lvPieces = <Piece>[];
-    final playedPieces = <Piece>[];
+    final lvPieces = <Piece2>[];
+    final playedPieces = <Piece2>[];
     pieces.forEach((puzzlePiece) {
+      final gk = GlobalKey();
+      print('gk = $gk');
+      final piece2 = Piece2(
+          image: puzzle.image,
+          imageSize: Size(puzzle.image.width, puzzle.image.height),
+          row: puzzlePiece.home.row,
+          col: puzzlePiece.home.col,
+          maxRow: puzzle.maxRc.row,
+          maxCol: puzzle.maxRc.col,
+          puzzlePiece: puzzlePiece,
+          key: gk
+      );
       if (puzzlePiece.lastDy != null) {
-        playedPieces.add(Piece(puzzlePiece, puzzle.maxRc, GlobalKey()));
+        playedPieces.add(piece2);
       } else {
-        lvPieces.add(Piece(puzzlePiece, puzzle.maxRc, GlobalKey()));
+        lvPieces.add(piece2);
       }
     });
     setState(() {
@@ -203,27 +215,31 @@ class _PlayPageState extends State<PlayPage> {
   // moved.
   List<Widget> _draggablePlayedPieces() {
     _playedPieces..sort((p1, p2) => p2.puzzlePiece.isLocked ? 1 : -1);
-    return _playedPieces
-        .map((piece) => piece.playedPiece(devSize, onPieceDropped))
-        .toList();
+    final thang = <Widget>[];
+    for (Piece2 p in _playedPieces) {
+      thang.add(playedPiece(p));
+    }
+
+    print('$thang');
+    return thang;
   }
 
-  void onPieceDropped(Piece piece, Offset topLeft) async {
-    bool isDroppedInLv = _isDroppedInListView(piece, topLeft);
-    print('piece: $piece, topLeft: $topLeft. isDroppedInLv: $isDroppedInLv');
+  void onPieceDropped(Piece2 piece2, Offset topLeft) async {
+    bool isDroppedInLv = _isDroppedInListView(piece2, topLeft);
+    print('piece: $piece2, topLeft: $topLeft. isDroppedInLv: $isDroppedInLv');
 
     // Remove from _lvPieces and _playedPieces.
-    _lvPieces.remove(piece);
-    _playedPieces.remove(piece);
+    _lvPieces.remove(piece2);
+    _playedPieces.remove(piece2);
 
     if (isDroppedInLv) {
-      _droppedInLv(piece, topLeft);
+      _droppedInLv(piece2, topLeft);
     } else {
-      await _droppedOnPalette(piece, topLeft);
+      await _droppedOnPalette(piece2, topLeft);
     }
   }
 
-  Future<void> _droppedOnPalette(Piece piece, Offset topLeft) async {
+  Future<void> _droppedOnPalette(Piece2 piece, Offset topLeft) async {
     // Translate offset to the closest RC.
     // Set instance variables. Then setState. Finally, update database.
     piece.puzzlePiece.last = findClosest(piece.puzzlePiece, topLeft);
@@ -248,18 +264,18 @@ class _PlayPageState extends State<PlayPage> {
     }
   }
 
-  Future<void> _droppedInLv(Piece piece, Offset topLeft) async {
-    piece.puzzlePiece.last = RC();
+  Future<void> _droppedInLv(Piece2 piece2, Offset topLeft) async {
+    piece2.puzzlePiece.last = RC();
     Utils.printListviewPieces(_lvPieces);
     int insertAt = // Insert piece into listview at current location
-        Utils.findClosestLvElement(_lvPieces, isVerticalListview, topLeft);
+        Utils.findClosestLvElement2(_lvPieces, isVerticalListview, topLeft);
 // print('Inserting at $insertAt');
     setState(() {
-      _lvPieces.insert(insertAt, piece);
+      _lvPieces.insert(insertAt, piece2);
     });
 
     await BlocProvider.of<PuzzleBloc>(context)
-        .updatePuzzlePiece(piece.puzzlePiece.id, last: piece.puzzlePiece.last);
+        .updatePuzzlePiece(piece2.puzzlePiece.id, last: piece2.puzzlePiece.last);
   }
 
   // Find the closest RC (column/row) to offset.
@@ -356,9 +372,9 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Widget _puzzleImage() {
-    return DragTarget<Piece>(
+    return DragTarget<Piece2>(
       builder: (context, ok, rejected) => _fullImageContainer(),
-      onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
+      onAcceptWithDetails: ((DragTargetDetails<Piece2> dtd) {
         onPieceDropped(dtd.data, dtd.offset);
       }),
       onWillAccept: (_) => true,
@@ -366,10 +382,10 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Widget _listView() {
-    return DragTarget<Piece>(
+    return DragTarget<Piece2>(
         builder: (context, ok, rejected) => _listViewContainer(),
         onWillAccept: (_) => true,
-        onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
+        onAcceptWithDetails: ((DragTargetDetails<Piece2> dtd) {
           onPieceDropped(dtd.data, dtd.offset);
         }));
   }
@@ -380,26 +396,35 @@ class _PlayPageState extends State<PlayPage> {
         width: lW,
         height: lH,
         child: ListView.builder(
-            padding: EdgeInsets.zero,
+            // padding: EdgeInsets.zero,
             key: _lvKey,
             cacheExtent: 1500,
             scrollDirection: devIsLandscape ? Axis.vertical : Axis.horizontal,
             itemCount: _lvPieces.length,
-            itemBuilder: (context, index) =>
-                _lvPieces[index].lvPiece(devIsLandscape, onPieceDropped)));
+            itemBuilder: (context, index) {
+              Widget p = lvPiece(_lvPieces[index]);
+              return p;
+
+              // Container(
+              //     child: lvPiece(_lvPieces[index]),
+              //   width: 120, height: 240.0,
+              // )
+            }
+
+        ));
   }
 
-  bool _isDroppedInListView(Piece piece, Offset piecePos) {
+  bool _isDroppedInListView(Piece2 piece2, Offset piecePos) {
     Offset lvPos = Utils.getPosition(_lvKey);
     Size lvSize = Utils.getSize(_lvKey);
     if (lvSize.width < lvSize.height) {
       // vertical listview
-      return piecePos.dx + (piece.puzzlePiece.imageWidth / 2) >= lvPos.dx
+      return piecePos.dx + (piece2.puzzlePiece.imageWidth / 2) >= lvPos.dx
           ? true
           : false;
     } else {
       // horizontal listview
-      return piecePos.dy + (piece.puzzlePiece.imageHeight) >= lvPos.dy
+      return piecePos.dy + (piece2.puzzlePiece.imageHeight) >= lvPos.dy
           ? true
           : false;
     }
@@ -419,5 +444,27 @@ class _PlayPageState extends State<PlayPage> {
     Utils.setOrientations();
     Navigator.pop(context, puzzle);
     return Future.value(false);
+  }
+
+  Widget playedPiece(Piece2 piece2) {
+    return Positioned(
+      left: piece2.puzzlePiece.lastDx,
+      top: piece2.puzzlePiece.lastDy,
+      width: piece2.imageSize.width, // puzzlePiece.imageWidth,
+      height: piece2.imageSize.height, // .puzzlePiece.imageHeight,
+      child: piece2,
+    );
+  }
+
+  Widget lvPiece(Piece2 piece2) {
+    return Container(width: 80, height: 80,
+      child: FittedBox(fit: BoxFit.fill,
+          // width: 236, height: 256.0,
+          // constraints: BoxConstraints.loose(Size(80.0, 80.0)),
+        // child: Image.memory(piece2.puzzlePiece.imageBytes,  // correct-looking square pieces
+          child: piece2
+          // child: Image.memory(piece2.puzzlePiece.imageBytes, scale: 0.25,)
+        ),
+    );
   }
 }

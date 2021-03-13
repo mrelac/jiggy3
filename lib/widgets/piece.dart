@@ -11,6 +11,7 @@ typedef void OnPieceDropped(Piece piece, Offset topLeft);
 
 class Piece extends StatefulWidget {
   final PuzzlePiece puzzlePiece;
+  final Image image;
   final RC maxRc;
 
   // GlobalKey to identify piece position in listview. NOTE: it does not work
@@ -18,7 +19,7 @@ class Piece extends StatefulWidget {
   // however, work if you add the key to the ClipPath that gets returned.
   final Key key; // GlobalKey to identify piece position in listview
 
-  Piece(this.puzzlePiece, this.maxRc, this.key);
+  Piece(this.puzzlePiece, this.maxRc, this.key, this.image);
 
   Widget lvPiece(bool devIsLandscape, OnPieceDropped onPieceDropped) {
     final Widget clipPath = _clipPathImageLV();
@@ -36,7 +37,7 @@ class Piece extends StatefulWidget {
 
   Widget _lvDragTarget(OnPieceDropped onPieceDropped) {
     return DragTarget<Piece>(
-      builder: (context, ok, rejected) => _clipPathImage(),
+      builder: (context, ok, rejected) => _clipPathImageLV(),
       onWillAccept: (_) => true,
       onAcceptWithDetails: ((DragTargetDetails<Piece> dtd) {
         onPieceDropped(dtd.data, dtd.offset);
@@ -52,7 +53,9 @@ class Piece extends StatefulWidget {
           child: Padding(
             // padding: const EdgeInsets.all(4.0),
             padding: const EdgeInsets.all(0.0),
-            child: Image.memory(puzzlePiece.imageBytes),
+
+            // child: Image.memory(puzzlePiece.imageBytes),
+            child: image,
           ),
         ),
         // clipper: PieceClipper(
@@ -123,7 +126,6 @@ class Piece extends StatefulWidget {
           child: Image.memory(puzzlePiece.imageBytes)),
       // clipper: PieceClipper(
       //     puzzlePiece.home.row, puzzlePiece.home.col, maxRc.row, maxRc.col)
-
     );
   }
 
@@ -185,7 +187,85 @@ class PiecePainter extends CustomPainter {
   }
 }
 
-// this is the path used to clip the image and, then, to draw a border around it; here we actually draw the puzzle piece
+// this is the path used to clip the image and, then, to draw a border around it.
+// Here we actually draw the puzzle piece
+Path getPiecePath2(Size size, int row, int col, int maxRow, int maxCol) {
+  final width = size.width;
+  final height = size.height;
+  final offsetX = col * width;
+  final offsetY = row * height;
+  final bumpSize = height / 4;
+
+  var path = Path();
+  path.moveTo(offsetX, offsetY);
+
+  if (row == 0) {
+    // top side piece
+    path.lineTo(offsetX + width, offsetY);
+  } else {
+    // top bump
+    path.lineTo(offsetX + width / 3, offsetY);
+    path.cubicTo(
+        offsetX + width / 6,
+        offsetY - bumpSize,
+        offsetX + width / 6 * 5,
+        offsetY - bumpSize,
+        offsetX + width / 3 * 2,
+        offsetY);
+    path.lineTo(offsetX + width, offsetY);
+  }
+
+  if (col == maxCol - 1) {
+    // right side piece
+    path.lineTo(offsetX + width, offsetY + height);
+  } else {
+    // right bump
+    path.lineTo(offsetX + width, offsetY + height / 3);
+    path.cubicTo(
+        offsetX + width - bumpSize,
+        offsetY + height / 6,
+        offsetX + width - bumpSize,
+        offsetY + height / 6 * 5,
+        offsetX + width,
+        offsetY + height / 3 * 2);
+    path.lineTo(offsetX + width, offsetY + height);
+  }
+
+  if (row == maxRow - 1) {
+    // bottom side piece
+    path.lineTo(offsetX, offsetY + height);
+  } else {
+    // bottom bump
+    path.lineTo(offsetX + width / 3 * 2, offsetY + height);
+    path.cubicTo(
+        offsetX + width / 6 * 5,
+        offsetY + height - bumpSize,
+        offsetX + width / 6,
+        offsetY + height - bumpSize,
+        offsetX + width / 3,
+        offsetY + height);
+    path.lineTo(offsetX, offsetY + height);
+  }
+
+  if (col == 0) {
+    // left side piece
+    path.close();
+  } else {
+    // left bump
+    path.lineTo(offsetX, offsetY + height / 3 * 2);
+    path.cubicTo(
+        offsetX - bumpSize,
+        offsetY + height / 6 * 5,
+        offsetX - bumpSize,
+        offsetY + height / 6,
+        offsetX,
+        offsetY + height / 3);
+    path.close();
+  }
+
+  return path;
+}
+
 Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
   final width = size.width;
   final height = size.height;
@@ -262,3 +342,5 @@ Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
 
   return path;
 }
+
+

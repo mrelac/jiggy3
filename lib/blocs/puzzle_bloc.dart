@@ -131,6 +131,11 @@ class PuzzleBloc extends Cubit<Puzzle> {
           imageHeight: height.toDouble(),
           home: RC(row: r, col: c),
         );
+
+
+
+
+
         pieces.add(piece);
         x += width;
       }
@@ -150,4 +155,12 @@ class PuzzleBloc extends Cubit<Puzzle> {
             'PuzzleBloc.splitImageIntoPieces(): Total elapsed time: ${d.inMinutes.toStringAsFixed(2)}:${d.inSeconds.toStringAsFixed(2)}',
         dateFormat: Utils.DEFAULT_TIIME_FORMAT);
   }
+
+  Future<void> splitImageIntoPieces2(Puzzle puzzle, RC maxRc, List<PuzzlePiece> pieces) async {
+
+    await Repository.insertPuzzlePieces(pieces);
+
+
+  }
+
 }
