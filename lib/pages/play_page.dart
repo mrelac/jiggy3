@@ -124,8 +124,7 @@ class _PlayPageState extends State<PlayPage> {
       _updatePuzzleControls();
     });
   }
-
-  // initState()
+  
   @override
   void initState() {
     super.initState();
