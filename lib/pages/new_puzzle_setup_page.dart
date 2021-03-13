@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jiggy3/blocs/puzzle_bloc.dart';
 import 'package:jiggy3/models/puzzle.dart';
 import 'package:jiggy3/models/rc.dart';
+import 'package:jiggy3/pages/play_page.dart';
 import 'package:jiggy3/services/image_service.dart';
 
 class NewPuzzleSetupPage extends StatefulWidget {
@@ -134,8 +135,24 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
           maxRc: _returnedPuzzle.maxRc);
     }
     await _returnedPuzzle.loadImage();
+    Image newImage = _fitImageForListview();
+    _returnedPuzzle.image = newImage;
     await puzzleBloc.splitImageIntoPieces(_returnedPuzzle, _maxRc);
     _onWillPop();
+  }
+
+  Image _fitImageForListview() {
+    FileImage fi = _returnedPuzzle.image.image as FileImage;
+    double width = _returnedPuzzle.image.width;
+    double height = _returnedPuzzle.image.height;
+    if (_returnedPuzzle.image.width > _returnedPuzzle.image.height) {
+      width -= PlayPage.elWidth.toDouble();
+    } else {
+      height -= PlayPage.elHeight.toDouble();
+    }
+    Image newImage = Image.file(fi.file, width: width, height: height,
+      fit: BoxFit.fill); // This stretches the image to fill image container
+    return newImage;
   }
 
   bool get devIsPortrait =>

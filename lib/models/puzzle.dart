@@ -29,6 +29,10 @@ class Puzzle {
     return _image;
   }
 
+  set image(Image value) {
+    _image = value;
+  }
+
   Future<void> loadImage() async {
     if (_image == null) {
       _image = await Repository.getPuzzleImage(imageLocation);
