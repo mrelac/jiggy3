@@ -16,7 +16,9 @@ const double fH = 80.0; // fab height including padding
 class PlayPage extends StatefulWidget {
   final Puzzle puzzle;
 
-  PlayPage(this.puzzle);
+  PlayPage(this.puzzle) {
+    puzzle.image = _fitImageForListview();
+  }
 
   @override
   _PlayPageState createState() => _PlayPageState();
@@ -24,6 +26,26 @@ class PlayPage extends StatefulWidget {
   static double get elWidth => eW;
 
   static double get elHeight => eH;
+
+
+  // FIXME put this code at the bottom in the PRIVATE METHODS section.
+  Image _fitImageForListview() {
+    FileImage fi = puzzle.image.image as FileImage;
+    double width = puzzle.image.width;
+    double height = puzzle.image.height;
+    if (puzzle.image.width > puzzle.image.height) {
+      width -= PlayPage.elWidth.toDouble();
+    } else {
+      height -= PlayPage.elHeight.toDouble();
+    }
+    Image newImage = Image.file(fi.file, width: width, height: height,
+        fit: BoxFit.fill); // This stretches the image to fill image container
+    return newImage;
+  }
+
+
+
+
 }
 
 class _PlayPageState extends State<PlayPage> {

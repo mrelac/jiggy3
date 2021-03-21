@@ -184,9 +184,11 @@ INSERT INTO puzzle_piece
    home_row, home_col, last_row, last_col)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 ''';
+    // FIXME Get rid of imageBytes if not needed.
     pieces.forEach((piece) async => db.rawInsert(insert, [
           piece.puzzleId,
-          base64Encode(piece.imageBytes),
+          // base64Encode(piece.imageBytes),
+      null,
           piece.imageWidth,
           piece.imageHeight,
           piece.isLocked,
@@ -432,12 +434,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     );
     ''');
 
+    // FIXME get rid of image_bytes if not needed.
     print('Creating puzzle_piece table');
     db.execute('''
     CREATE TABLE puzzle_piece(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     puzzle_id INTEGER NOT NULL,
-    image_bytes BLOB NOT NULL,
+    image_bytes BLOB  NULL,
     image_width REAL NOT NULL,
     image_height REAL NOT NULL,
     locked INTEGER NOT NULL,

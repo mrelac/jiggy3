@@ -103,30 +103,34 @@ class PuzzleBloc extends Cubit<Puzzle> {
 
     // IMPORTANT: Subtract listview width (if landscape) / height (if portrait)
     final isImageLandscape = puzzle.image.width > puzzle.image.height;
+
+    // FIXME
     final imageWidthAdjusted =
-        image.width - (isImageLandscape ? PlayPage.elWidth : 0);
+        image.width;
+        // image.width - (isImageLandscape ? PlayPage.elWidth : 0);
     final imageHeightAdjusted =
-        image.height - (isImageLandscape ? 0 : PlayPage.elHeight);
+    image.height;
+        // image.height - (isImageLandscape ? 0 : PlayPage.elHeight);
     int width = (imageWidthAdjusted / maxRc.col).ceil();
     int height = (imageHeightAdjusted / maxRc.row).ceil();
 
     int x = 0, y = 0;
-    imglib.Image imagelib =
-        imglib.decodeJpg(await ImageService.getImageBytes(image));
+    // imglib.Image imagelib =
+    //     imglib.decodeJpg(await ImageService.getImageBytes(image));
 
     // Do the same thing that BoxFit.fill does:
     // Crop the image to account for listview element width.
-    imagelib = imglib.copyResize(imagelib,
-        width: imageWidthAdjusted.toInt(), height: imageHeightAdjusted.toInt());
+    // imagelib = imglib.copyResize(imagelib,
+    //     width: imageWidthAdjusted.toInt(), height: imageHeightAdjusted.toInt());
 
     for (int r = 0; r < maxRc.row; r++) {
       pieces.clear();
       for (int c = 0; c < maxRc.col; c++) {
-        Uint8List pieceBytes =
-            ImageService.copyCrop(imagelib, x, y, width, height);
+        // Uint8List pieceBytes =
+        //     ImageService.copyCrop(imagelib, x, y, width, height);
         PuzzlePiece piece = PuzzlePiece(
           puzzleId: puzzle.id,
-          imageBytes: pieceBytes,
+          // imageBytes: pieceBytes,
           imageWidth: width.toDouble(),
           imageHeight: height.toDouble(),
           home: RC(row: r, col: c),
@@ -154,6 +158,14 @@ class PuzzleBloc extends Cubit<Puzzle> {
         prefix:
             'PuzzleBloc.splitImageIntoPieces(): Total elapsed time: ${d.inMinutes.toStringAsFixed(2)}:${d.inSeconds.toStringAsFixed(2)}',
         dateFormat: Utils.DEFAULT_TIIME_FORMAT);
+  }
+
+  // FIXME
+  Future<void> prepareForPlaying() async {
+    // Resize image to device, less listview
+    // Create puzzle pieces
+    // Insert puzzle pieces into database
+
   }
 
   Future<void> splitImageIntoPieces2(Puzzle puzzle, RC maxRc, List<PuzzlePiece> pieces) async {

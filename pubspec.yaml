@@ -36,6 +36,7 @@ dependencies:
   json_serializable: ^3.5.1
   reorderables: ^0.3.2
   align_positioned: ^1.2.14
+  path_drawing: ^0.4.1+1
 
   flutter:
     sdk: flutter

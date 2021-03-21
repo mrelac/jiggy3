@@ -134,9 +134,11 @@ class _NewPuzzleSetupPageState extends State<NewPuzzleSetupPage> {
       await puzzleBloc.updatePuzzle(_returnedPuzzle.id,
           maxRc: _returnedPuzzle.maxRc);
     }
+    // FIXME Don't resize image here. Resize it in PlayPage where it needs
+    // FIXME to be resized to account for the listview.
     await _returnedPuzzle.loadImage();
-    Image newImage = _fitImageForListview();
-    _returnedPuzzle.image = newImage;
+    // Image newImage = _fitImageForListview();
+    // _returnedPuzzle.image = newImage;
     await puzzleBloc.splitImageIntoPieces(_returnedPuzzle, _maxRc);
     _onWillPop();
   }
