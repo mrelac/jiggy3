@@ -479,12 +479,33 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Widget lvPiece(Piece2 piece2) {
+
+
+    FileImage fi = piece2.image.image as FileImage;
+
+    Image myImage = Image.file(fi.file,
+    fit: BoxFit.fill,
+      alignment: Alignment.center,
+      width: 80,
+        height: 80,
+    );
+
+
     return Container(width: 80, height: 80,
+
       child: FittedBox(fit: BoxFit.fill,
           // width: 236, height: 256.0,
           // constraints: BoxConstraints.loose(Size(80.0, 80.0)),
         // child: Image.memory(piece2.puzzlePiece.imageBytes,  // correct-looking square pieces
-          child: piece2
+          child: SizedBox(
+              width: 80,
+              height: 80,
+              child:
+                // Image.file(myImage.),
+              piece2
+            // myImage,
+
+          ),
           // child: Image.memory(piece2.puzzlePiece.imageBytes, scale: 0.25,)
         ),
     );
