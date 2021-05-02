@@ -3,7 +3,29 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:jiggy3/models/puzzle_piece.dart';
+import 'package:jiggy3/utilities/piece_clipper.dart';
 import 'package:path_drawing/path_drawing.dart';
+
+// From Flutter team:
+// 1. You get undefined behaviour if you draw outside of the 'size' boundary.
+// 2. Paint draws the image to its full dimensions, which may be outside the given size.
+//    You must insure the canvas is the right size for the image given.
+//    SizedBox lets you explicitly specify its size and the size of its children.
+// 3. Wrap the CustomPaint widget inside a SizedBox given the same size as the image.
+//    The image will now be drawn correctly. But there's a new problem:
+//      The CustomPaint is now wrapped in a widget with a fixed size, so it
+//      won't 'play nice' with other widgets that want
+//      to constrain its dimensions in some way; e.g. putting the CustomPaint
+//      in a Container and trying to resize won't work.
+// 4. This problem is fixed by using a FittedBox. It will fit and scale the
+//      SizedBox contained within while allowing other widgets to constrain its dimensions.
+// So you end up with:
+//  FittedBox(
+//    SizedBox(
+//      width: image.width.toDouble(),
+//      height: image.height.toDouble(),
+//      child: FacePaint(    (extends CustomPaint)
+//        painter: FacePainter(image, path, etc)
 
 class Piece2 extends StatefulWidget {
   final PuzzlePiece puzzlePiece;
@@ -84,10 +106,10 @@ class Piece2State extends State<Piece2> {
   Widget _clippedPath() {
     return ClipPath(
       child: CustomPaint(
-          foregroundPainter: PuzzlePiecePainter(widget.row, widget.col, widget.maxRow, widget.maxCol),
+          foregroundPainter: PuzzlePiecePainter(widget, widget.row, widget.col, widget.maxRow, widget.maxCol),
           child: widget.image
       ),
-      clipper: PuzzlePieceClipper(widget.row, widget.col, widget.maxRow, widget.maxCol),
+      clipper: PuzzlePieceClipper(widget, widget.row, widget.col, widget.maxRow, widget.maxCol),
     );
   }
 }
@@ -98,12 +120,12 @@ class PuzzlePieceClipper extends CustomClipper<Path> {
   final int col;
   final int maxRow;
   final int maxCol;
-
-  PuzzlePieceClipper(this.row, this.col, this.maxRow, this.maxCol);
+  final Piece2 piece2;
+  PuzzlePieceClipper(this.piece2, this.row, this.col, this.maxRow, this.maxCol);
 
   @override
   Path getClip(Size size) {
-    return getPiecePath(size, row, col, maxRow, maxCol);
+    return getPiecePath2(piece2, size, row, col, maxRow, maxCol);
   }
 
   @override
@@ -116,8 +138,9 @@ class PuzzlePiecePainter extends CustomPainter {
   final int col;
   final int maxRow;
   final int maxCol;
+  final Piece2 piece2;
 
-  PuzzlePiecePainter(this.row, this.col, this.maxRow, this.maxCol);
+  PuzzlePiecePainter(this.piece2, this.row, this.col, this.maxRow, this.maxCol);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -126,7 +149,7 @@ class PuzzlePiecePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    canvas.drawPath(getPiecePath(size, row, col, maxRow, maxCol), paint);
+    canvas.drawPath(getPiecePath2(piece2, size, row, col, maxRow, maxCol), paint);
   }
 
   @override
@@ -135,9 +158,67 @@ class PuzzlePiecePainter extends CustomPainter {
   }
 }
 
+Path getPiecePath2(Piece2 piece2, Size size, int row, int col, int maxRow, int maxCol) {
+
+
+  double width = piece2.image.width / maxCol;
+  double height = piece2.image.height / maxRow;
+
+
+  final pc = ClipGenerator(piece2);
+  String clipTop = pc.generateTop(width, height);
+  String clipRight = pc.generateRight(width, height);
+  String clipBottom = pc.generateBottom(width, height);
+  String clipLeft = pc.generateLeft(width, height);
+
+    String s =  'm ${piece2.puzzlePiece.homeDx} ${piece2.puzzlePiece.homeDy} ' +
+      // String s =  'm 0 0 ' +
+      clipTop +
+      ' ' +
+      clipRight +
+      ' ' +
+      clipBottom +
+      ' ' +
+      clipLeft;
+
+    Path p = parseSvgPathData(s);
+  return p;
+
+
+}
+
+
+// String getPathString() {
+//
+//   String s =  'm $homeDx $homeDy ' +
+//       // String s =  'm 0 0 ' +
+//       clipTop +
+//       ' ' +
+//       clipRight +
+//       ' ' +
+//       clipBottom +
+//       ' ' +
+//       clipLeft;
+//
+//   print('Piece ($homeDx, $homeDy):');
+//   print('  m $homeDx $homeDy');
+//   print('  $clipTop');
+//   print('  $clipRight');
+//   print('  $clipBottom');
+//   print('  $clipLeft');
+//   print(' ');
+//
+//   return s;
+// }
+
+
+
+
+
+
 // this is the path used to clip the image and, then, to draw a border around it; here we actually draw the puzzle piece
 // FIXME get rid of these number comments when it's debugged and working.
-Path getPiecePath(Size size, int row, int col, int maxRow, int maxCol) {
+Path getPiecePath(Piece2 piece2, Size size, int row, int col, int maxRow, int maxCol) {
   final width = size.width / maxCol;    // 256 (SHOULD BE 236!)
 
   final height = size.height / maxRow;  // 256
