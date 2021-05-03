@@ -224,6 +224,12 @@ class _PlayPageState extends State<PlayPage> {
   }
 
   Future<void> _droppedOnPalette(Piece piece, Offset topLeft) async {
+    // Constrain topLeft to the screen dimensions so pieces don't disappear.
+    double dy = topLeft.dy < 0 ? 0 : topLeft.dy;
+    dy = dy > devSize.height - piece.puzzlePiece.imageHeight ? devSize.height - piece.puzzlePiece.imageHeight : dy;
+    double dx = topLeft.dx < 0 ? 0 : topLeft.dx;
+    topLeft = Offset(dx, dy);
+
     // Translate offset to the closest RC.
     // Set instance variables. Then setState. Finally, update database.
     piece.puzzlePiece.last = findClosest(piece.puzzlePiece, topLeft);
