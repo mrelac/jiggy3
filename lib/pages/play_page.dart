@@ -228,6 +228,7 @@ class _PlayPageState extends State<PlayPage> {
     double dy = topLeft.dy < 0 ? 0 : topLeft.dy;
     dy = dy > devSize.height - piece.puzzlePiece.imageHeight ? devSize.height - piece.puzzlePiece.imageHeight : dy;
     double dx = topLeft.dx < 0 ? 0 : topLeft.dx;
+    dx = dx > devSize.width - piece.puzzlePiece.imageWidth ? devSize.width - piece.puzzlePiece.imageWidth : dx;
     topLeft = Offset(dx, dy);
 
     // Translate offset to the closest RC.
